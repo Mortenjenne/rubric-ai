@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "assignment": "Praktikrapport, 5. semester, datamatikeruddannelsen",
+  "language": "da",
+  "levels": [
+    "Mangelfuldt",
+    "Acceptabelt",
+    "Tilfredsstillende",
+    "Udmærket"
+  ],
+  "note": "Niveauerne er kvalitetsbånd, ikke karakterer. Vægtene er vejledende for modellens fokus - der regnes ikke på dem.",
+  "criteria": [
+    {
+      "id": "formkrav",
+      "name": "Formkrav & begrænsninger",
+      "weight": 10,
+      "sources": [
+        "krav-til-rapport.md"
+      ],
+      "description": "Om rapporten overholder de formelle krav: individuel, højst 12.000 tegn inkl. mellemrum ekskl. bilag, og indeholder alle seks krævede indholdselementer, herunder kvittering for evalueringsskemaet.",
+      "levels": {
+        "Udmærket": "Alle seks krævede indholdselementer er til stede og tydeligt genkendelige, omfanget er inden for 12.000 tegn, og kvittering for evalueringsskemaet fremgår. Rapporten er individuel og velstruktureret med klare afsnit.",
+        "Tilfredsstillende": "Alle væsentlige indholdselementer er til stede og omfanget er overholdt, men et enkelt element er kun kort berørt, eller strukturen gør det svært at finde det.",
+        "Acceptabelt": "Rapporten overholder omfanget, men mangler et enkelt krævet element - typisk kvitteringen for evalueringsskemaet - eller behandler flere elementer så overfladisk, at de knap kan genfindes.",
+        "Mangelfuldt": "Omfanget er overskredet, eller flere krævede indholdselementer mangler helt."
+      }
+    },
+    {
+      "id": "viden",
+      "name": "Viden om praktikvirksomheden",
+      "weight": 15,
+      "sources": [
+        "laeringsmaal.md"
+      ],
+      "description": "Læringsmål (viden): den studerende har viden om den daglige drift i hele praktikvirksomheden - ikke kun egne opgaver.",
+      "levels": {
+        "Udmærket": "Beskriver virksomheden som helhed: forretningsområde, kunder, organisering og hvordan eget team indgår i den daglige drift. Sammenhængen mellem virksomhedens drift og de konkrete opgaver er tydelig.",
+        "Tilfredsstillende": "Beskriver virksomheden og eget team dækkende, men helhedsbilledet af den daglige drift uden for eget team er tyndt.",
+        "Acceptabelt": "Nævner virksomheden kort og overvejende gennem egne opgaver; den daglige drift beskrives ikke selvstændigt.",
+        "Mangelfuldt": "Virksomheden er stort set ubeskrevet, eller beskrivelsen er så generisk, at den kunne passe på enhver arbejdsplads."
+      }
+    },
+    {
+      "id": "faerdigheder",
+      "name": "Færdigheder i praksis",
+      "weight": 25,
+      "sources": [
+        "laeringsmaal.md"
+      ],
+      "description": "Læringsmål (færdigheder): anvende alsidige tekniske og analytiske arbejdsmetoder, vurdere praksisnære problemstillinger og opstille løsningsmuligheder, håndtere strukturering og planlægning af daglige arbejdsopgaver, samt formidle problemstillinger og begrundede løsningsforslag.",
+      "levels": {
+        "Udmærket": "Alle fire færdighedsmål er belagt med konkrete opgaver fra praktikken. Tekniske og analytiske metoder er navngivet og anvendt, løsningsmuligheder er afvejet mod hinanden, planlægning af eget arbejde er beskrevet, og formidlingen af begrundede løsningsforslag er dokumenteret.",
+        "Tilfredsstillende": "De fleste færdighedsmål er belagt med konkrete eksempler, men et enkelt mål - ofte formidling eller afvejning af løsningsmuligheder - er kun påstået og ikke vist.",
+        "Acceptabelt": "Færdighederne nævnes overvejende som opremsning af opgaver og værktøjer uden at vise, hvordan problemstillinger blev vurderet eller løsninger valgt.",
+        "Mangelfuldt": "Flere færdighedsmål er ikke berørt, eller rapporten beskriver kun hvad der blev lavet, ikke hvordan der blev arbejdet."
+      }
+    },
+    {
+      "id": "kompetencer",
+      "name": "Kompetencer og professionel tilgang",
+      "weight": 20,
+      "sources": [
+        "laeringsmaal.md"
+      ],
+      "description": "Læringsmål (kompetencer): håndtere udviklingsorienterede praktiske og faglige situationer, tilegne sig ny viden og færdigheder i relation til erhvervet, og deltage i fagligt og tværfagligt samarbejde med en professionel tilgang.",
+      "levels": {
+        "Udmærket": "Viser selvstændig håndtering af uvante faglige situationer, en beskrevet måde at tilegne sig ny viden på, og konkret fagligt eller tværfagligt samarbejde med kolleger eller kunde. Den professionelle tilgang fremgår af handlinger, ikke af selvvurdering.",
+        "Tilfredsstillende": "To af de tre kompetencemål er tydeligt belagt; det tredje er beskrevet, men uden konkret situation at hænge det op på.",
+        "Acceptabelt": "Kompetencerne berøres generelt eller kun gennem et enkelt eksempel; samarbejdet beskrives uden at det fremgår, hvad den studerende selv bidrog med.",
+        "Mangelfuldt": "Rapporten viser ikke selvstændig håndtering af faglige situationer, eller samarbejde og videntilegnelse er ikke berørt."
+      }
+    },
+    {
+      "id": "refleksion",
+      "name": "Refleksion over teori, udviklingsmål og udbytte",
+      "weight": 20,
+      "sources": [
+        "krav-til-rapport.md"
+      ],
+      "description": "Om rapporten reflekterer frem for at referere: opgaverne holdt op mod teorier og modeller fra uddannelsen, egne personlige udviklingsmål, og udbyttet af forløbet for både virksomheden og den studerende selv.",
+      "levels": {
+        "Udmærket": "Navngivne teorier og modeller fra uddannelsen bruges aktivt til at analysere konkrete praktikoplevelser, herunder hvor praksis afveg fra teorien. Personlige udviklingsmål følges op med hvad der faktisk ændrede sig, og udbyttet vurderes for begge parter.",
+        "Tilfredsstillende": "Teorier og modeller nævnes og kobles til praksis, men koblingen er overvejende bekræftende; refleksionen over egne udviklingsmål eller udbytte er kortere end resten.",
+        "Acceptabelt": "Refleksionen er hovedsagelig gengivelse af forløbet med enkelte vurderende bemærkninger; teori nævnes uden at blive brugt.",
+        "Mangelfuldt": "Rapporten er en beretning om hvad der skete, uden kobling til uddannelsens teori og uden refleksion over eget udbytte."
+      }
+    },
+    {
+      "id": "dare-share-care",
+      "name": "Dare, Share, Care",
+      "weight": 10,
+      "sources": [
+        "dare-share-care.md"
+      ],
+      "description": "EK's tre kerneværdier, som indgår i bedømmelsen: DARE (nysgerrig, modig, vedholdende, tage initiativ og turde fejle), SHARE (dele viden og erfaring, skabe relationer og fællesskab) og CARE (åben, tillidsfuld og ansvarlig tilgang til sig selv og andre).",
+      "levels": {
+        "Udmærket": "Alle tre værdier er belagt med konkrete episoder fra praktikken - noget der blev vovet, noget der blev delt, og omsorg for sig selv eller andre - og den studerende reflekterer over hvad episoderne betød.",
+        "Tilfredsstillende": "To af de tre værdier er tydeligt belagt med episoder; den tredje nævnes uden konkret eksempel.",
+        "Acceptabelt": "Værdierne er til stede som personlige udsagn eller opremsning uden episoder, der viser dem.",
+        "Mangelfuldt": "Værdierne er hverken navngivet eller genkendelige i rapportens indhold."
+      }
+    }
+  ]
+}

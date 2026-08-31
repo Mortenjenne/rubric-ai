@@ -63,3 +63,8 @@ Thumbs.db
 ### AI ###
 *.claude
 skills-lock.json
+*CONTEXT.md
+CLAUDE.md
+*.scratch
+*.agents
+*docs/agents
