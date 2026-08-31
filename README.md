@@ -13,15 +13,21 @@ vocabulary and [`docs/adr/`](docs/adr/) for the decisions behind the design.
 ## Configuration
 
 The database connection and its credentials are read from the environment; no credential is
-committed. Set at least `DB_PASSWORD` before starting the database or the application:
+committed. Set at least `DB_PASSWORD` before starting the database or the application. Calling
+the real language model additionally requires `OPENAI_API_KEY` — without it, the app still
+starts (only the fake adapter is used in tests), but posting a Submission against the real
+adapter fails fast:
 
-| Variable      | Used by            | Default      |
-| ------------- | ------------------- | ------------ |
-| `DB_HOST`     | app                  | `localhost`  |
-| `DB_PORT`     | app, compose         | `5432`       |
-| `DB_NAME`     | app, compose         | `rubricai`   |
-| `DB_USER`     | app, compose         | `rubricai`   |
-| `DB_PASSWORD` | app, compose         | *(required)* |
+| Variable         | Used by       | Default        |
+| ---------------- | ------------- | -------------- |
+| `DB_HOST`        | app           | `localhost`    |
+| `DB_PORT`        | app, compose  | `5432`         |
+| `DB_NAME`        | app, compose  | `rubricai`     |
+| `DB_USER`        | app, compose  | `rubricai`     |
+| `DB_PASSWORD`    | app, compose  | *(required)*   |
+| `OPENAI_API_KEY` | app           | *(required)*   |
+| `LLM_PROVIDER`   | app           | `openai`       |
+| `LLM_MODEL`      | app           | `gpt-5.6-luna` |
 
 ## Running locally
 

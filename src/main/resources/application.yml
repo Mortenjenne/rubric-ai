@@ -15,8 +15,9 @@ spring:
           time_zone: UTC
 
 llm:
-  # Provider is fixed to openai until a second adapter lands (ADR 0001). The model id is
-  # deliberately not pinned by the spec yet; issue 03 confirms it against current OpenAI
-  # documentation. Both are overridable so development can run a cheaper tier than the demo.
+  # Provider is fixed to openai until a second adapter lands (ADR 0001). gpt-5.6-luna is
+  # OpenAI's current cheap tier and supports Structured Outputs on Chat Completions, so it's
+  # the default for development; override LLM_MODEL to a stronger tier (e.g. gpt-5.6-sol) for
+  # the demo. OPENAI_API_KEY must be set in the environment — never committed here.
   provider: ${LLM_PROVIDER:openai}
-  model: ${LLM_MODEL:gpt-4o-mini}
+  model: ${LLM_MODEL:gpt-5.6-luna}
