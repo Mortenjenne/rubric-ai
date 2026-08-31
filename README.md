@@ -27,7 +27,12 @@ adapter fails fast:
 | `DB_PASSWORD`    | app, compose  | *(required)*   |
 | `OPENAI_API_KEY` | app           | *(required)*   |
 | `LLM_PROVIDER`   | app           | `openai`       |
-| `LLM_MODEL`      | app           | `gpt-5.6-luna` |
+| `LLM_MODEL`      | app           | `gpt-4o-mini`  |
+
+`LLM_MODEL` must name a model that both supports Structured Outputs and honours a custom
+`temperature` on Chat Completions — OpenAI's newer reasoning-style tiers (e.g. `gpt-5.6-luna`)
+accept requests but reject any temperature override, so confirm both before overriding the
+default.
 
 ## Running locally
 

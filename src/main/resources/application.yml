@@ -15,9 +15,12 @@ spring:
           time_zone: UTC
 
 llm:
-  # Provider is fixed to openai until a second adapter lands (ADR 0001). gpt-5.6-luna is
-  # OpenAI's current cheap tier and supports Structured Outputs on Chat Completions, so it's
-  # the default for development; override LLM_MODEL to a stronger tier (e.g. gpt-5.6-sol) for
-  # the demo. OPENAI_API_KEY must be set in the environment — never committed here.
+  # Provider is fixed to openai until a second adapter lands (ADR 0001). gpt-4o-mini is
+  # OpenAI's cheap tier, supports Structured Outputs on Chat Completions, and — unlike the
+  # newer reasoning-style tiers (verified against the live API: gpt-5.6-luna rejects any
+  # temperature override with "Only the default (1) value is supported") — actually honours
+  # the spec's temperature-zero requirement. Override LLM_MODEL to a stronger tier (e.g.
+  # gpt-4.1 or gpt-4o) for the demo; confirm any override also accepts a custom temperature
+  # before relying on it. OPENAI_API_KEY must be set in the environment — never committed here.
   provider: ${LLM_PROVIDER:openai}
-  model: ${LLM_MODEL:gpt-5.6-luna}
+  model: ${LLM_MODEL:gpt-4o-mini}
