@@ -1,7 +1,6 @@
 package app.evaluation.web;
 
-import app.evaluation.InvalidModelOutputException;
-import app.evaluation.json.ErrorResponse;
+import app.evaluation.domain.InvalidModelOutputException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

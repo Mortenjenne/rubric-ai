@@ -1,4 +1,4 @@
-package app.evaluation.json;
+package app.evaluation.web;
 
 /**
  * {@code advisory} is always {@code true}: the service sets it unconditionally rather than

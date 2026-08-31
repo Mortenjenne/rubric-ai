@@ -1,4 +1,4 @@
-package app.evaluation;
+package app.evaluation.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

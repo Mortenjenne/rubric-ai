@@ -1,15 +1,20 @@
-package app.evaluation;
+package app.evaluation.service;
 
-import app.evaluation.json.EvaluationRequest;
-import app.evaluation.json.EvaluationResponse;
-import app.evaluation.json.FindingResponse;
-import app.evaluation.json.SuggestedGradeResponse;
+import app.evaluation.domain.InvalidModelOutputException;
 import app.evaluation.llm.LlmClient;
 import app.evaluation.llm.LlmEvaluationPayload;
 import app.evaluation.llm.LlmFindingPayload;
 import app.evaluation.llm.LlmProperties;
 import app.evaluation.llm.LlmRequest;
 import app.evaluation.llm.PromptBuilder;
+import app.evaluation.persistence.Evaluation;
+import app.evaluation.persistence.EvaluationDocument;
+import app.evaluation.persistence.EvaluationRepository;
+import app.evaluation.persistence.FindingDocument;
+import app.evaluation.web.EvaluationRequest;
+import app.evaluation.web.EvaluationResponse;
+import app.evaluation.web.FindingResponse;
+import app.evaluation.web.SuggestedGradeResponse;
 import app.rubric.Criterion;
 import app.rubric.Rubric;
 import app.rubric.RubricRepository;

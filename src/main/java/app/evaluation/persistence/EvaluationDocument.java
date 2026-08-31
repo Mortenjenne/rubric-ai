@@ -1,4 +1,4 @@
-package app.evaluation;
+package app.evaluation.persistence;
 
 import java.util.List;
 

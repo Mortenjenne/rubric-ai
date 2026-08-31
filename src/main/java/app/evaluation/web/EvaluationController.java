@@ -1,8 +1,6 @@
 package app.evaluation.web;
 
-import app.evaluation.EvaluationService;
-import app.evaluation.json.EvaluationRequest;
-import app.evaluation.json.EvaluationResponse;
+import app.evaluation.service.EvaluationService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

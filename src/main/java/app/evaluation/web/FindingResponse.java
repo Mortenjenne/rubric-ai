@@ -1,4 +1,4 @@
-package app.evaluation.json;
+package app.evaluation.web;
 
 import java.util.List;
 

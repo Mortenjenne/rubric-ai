@@ -1,7 +1,11 @@
 package app.evaluation;
 
-import app.evaluation.json.EvaluationRequest;
 import app.evaluation.llm.FakeLlmClient;
+import app.evaluation.persistence.Evaluation;
+import app.evaluation.persistence.EvaluationDocument;
+import app.evaluation.persistence.EvaluationRepository;
+import app.evaluation.persistence.FindingDocument;
+import app.evaluation.web.EvaluationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

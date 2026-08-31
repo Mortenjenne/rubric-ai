@@ -1,4 +1,4 @@
-package app.evaluation;
+package app.evaluation.domain;
 
 /**
  * The model's raw response could not be trusted: malformed JSON, a Bean Validation failure,

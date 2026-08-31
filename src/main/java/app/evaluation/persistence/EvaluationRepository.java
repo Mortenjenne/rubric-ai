@@ -1,4 +1,4 @@
-package app.evaluation;
+package app.evaluation.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

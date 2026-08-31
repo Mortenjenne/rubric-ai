@@ -1,6 +1,6 @@
 package app.evaluation.llm;
 
-import app.evaluation.Grade;
+import app.evaluation.domain.Grade;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
