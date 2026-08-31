@@ -13,3 +13,10 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+
+llm:
+  # Provider is fixed to openai until a second adapter lands (ADR 0001). The model id is
+  # deliberately not pinned by the spec yet; issue 03 confirms it against current OpenAI
+  # documentation. Both are overridable so development can run a cheaper tier than the demo.
+  provider: ${LLM_PROVIDER:openai}
+  model: ${LLM_MODEL:gpt-4o-mini}
