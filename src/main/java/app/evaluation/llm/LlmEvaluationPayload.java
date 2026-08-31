@@ -1,6 +1,6 @@
 package app.evaluation.llm;
 
-import app.evaluation.domain.Grade;
+import app.evaluation.domain.SuggestedGradeValue;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,7 +17,7 @@ import java.util.List;
  */
 public record LlmEvaluationPayload(
         @NotBlank String overallAssessment,
-        @NotNull Grade suggestedGrade,
+        @NotNull SuggestedGradeValue suggestedGrade,
         @NotEmpty @Valid List<LlmFindingPayload> findings,
         @NotNull @Size(min = 4, max = 6) List<@NotBlank String> dialogueQuestions) {
 }

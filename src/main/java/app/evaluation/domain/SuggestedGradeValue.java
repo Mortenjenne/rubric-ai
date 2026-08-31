@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * enum, mirroring {@link app.rubric.Level}, rather than a string pattern, so an out-of-scale
  * value fails at deserialisation instead of needing a separate check.
  */
-public enum Grade {
+public enum SuggestedGradeValue {
     MINUS_THREE("-3"),
     ZERO("00"),
     TWO("02"),
@@ -19,7 +19,7 @@ public enum Grade {
 
     private final String label;
 
-    Grade(String label) {
+    SuggestedGradeValue(String label) {
         this.label = label;
     }
 
@@ -29,8 +29,8 @@ public enum Grade {
     }
 
     @JsonCreator
-    public static Grade fromLabel(String label) {
-        for (Grade grade : values()) {
+    public static SuggestedGradeValue fromLabel(String label) {
+        for (SuggestedGradeValue grade : values()) {
             if (grade.label.equals(label)) {
                 return grade;
             }
