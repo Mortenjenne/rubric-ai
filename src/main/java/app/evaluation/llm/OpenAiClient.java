@@ -42,7 +42,9 @@ import java.util.function.Consumer;
  * connection fails fast as {@link UpstreamUnavailableException} without spending the backoff
  * budget — a provider that refuses the connection outright will not answer differently a moment
  * later. A 401 or 400 means our request is wrong, not that the provider is struggling, so both
- * fail immediately as {@link LlmConfigurationException} rather than being retried.
+ * fail immediately as {@link LlmConfigurationException} rather than being retried — and so does
+ * every other 4xx (403, 404, 422, …): none of them are the provider being overloaded, so none of
+ * them earn a retry.
  */
 @Component
 public class OpenAiClient implements LlmClient {
@@ -118,6 +120,9 @@ public class OpenAiClient implements LlmClient {
                 throw new LlmConfigurationException("OpenAI rejected the request: invalid credentials", e);
             } catch (HttpClientErrorException.BadRequest e) {
                 throw new LlmConfigurationException("OpenAI rejected the request as malformed", e);
+            } catch (HttpClientErrorException e) {
+                throw new LlmConfigurationException(
+                        "OpenAI rejected the request: " + e.getStatusCode(), e);
             } catch (ResourceAccessException e) {
                 if (e.getCause() instanceof ConnectException) {
                     throw new UpstreamUnavailableException("Connection to OpenAI was refused", e);

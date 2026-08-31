@@ -191,6 +191,20 @@ class OpenAiClientTest {
     }
 
     @Test
+    void otherClientErrorResponseFailsImmediatelyAsAConfigurationFaultWithoutRetrying() {
+        ServerAndClient mock = mockOpenAi();
+
+        mock.server().expect(once(), requestTo(CHAT_COMPLETIONS_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        assertThatThrownBy(() -> mock.client().call(new LlmRequest("system prompt", "user prompt")))
+                .isInstanceOf(LlmConfigurationException.class);
+
+        mock.server().verify();
+    }
+
+    @Test
     void emptyMessageContentIsTreatedAsInvalidModelOutput() {
         ServerAndClient mock = mockOpenAi();
 
