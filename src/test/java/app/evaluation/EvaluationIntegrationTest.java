@@ -1,5 +1,8 @@
 package app.evaluation;
 
+import app.evaluation.domain.LlmConfigurationException;
+import app.evaluation.domain.RateLimitedException;
+import app.evaluation.domain.UpstreamUnavailableException;
 import app.evaluation.llm.FakeLlmClient;
 import app.evaluation.persistence.Evaluation;
 import app.evaluation.persistence.EvaluationDocument;
@@ -377,6 +380,51 @@ class EvaluationIntegrationTest {
                 .andExpect(jsonPath("$.findings", hasSize(6)));
 
         assertThat(fakeLlmClient.callCount()).isEqualTo(2);
+    }
+
+    /**
+     * The shape every provider-failure test shares: the fake port raises the failure the real
+     * {@link app.evaluation.llm.OpenAiClient} would only raise after its own retry or fail-fast
+     * handling is exhausted, so from the endpoint's perspective this is a single call — the
+     * evaluation service never retries a provider failure, only a rejected payload (ticket 04).
+     */
+    private void assertFailsWithoutPersisting(RuntimeException failure, int expectedStatus, String expectedCode)
+            throws Exception {
+        fakeLlmClient.enqueueFailure(failure);
+        long countBefore = evaluationRepository.count();
+
+        mockMvc.perform(post("/api/evaluations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody()))
+                .andExpect(status().is(expectedStatus))
+                .andExpect(jsonPath("$.code").value(expectedCode));
+
+        assertThat(evaluationRepository.count()).isEqualTo(countBefore);
+        assertThat(fakeLlmClient.callCount()).isEqualTo(1);
+    }
+
+    @Test
+    void rateLimitedProviderFailureReturnsServiceUnavailableWithRateLimitedCauseAndPersistsNothing()
+            throws Exception {
+        assertFailsWithoutPersisting(
+                new RateLimitedException("OpenAI rate-limited the request", new RuntimeException("429")),
+                503, "rate_limited");
+    }
+
+    @Test
+    void upstreamUnavailableProviderFailureReturnsServiceUnavailableWithUpstreamUnavailableCauseAndPersistsNothing()
+            throws Exception {
+        assertFailsWithoutPersisting(
+                new UpstreamUnavailableException("OpenAI returned a server error", new RuntimeException("503")),
+                503, "upstream_unavailable");
+    }
+
+    @Test
+    void configurationFaultReturnsServerErrorDistinctFromServiceUnavailableFamilyAndPersistsNothing()
+            throws Exception {
+        assertFailsWithoutPersisting(
+                new LlmConfigurationException("OPENAI_API_KEY is not set"),
+                500, "configuration_error");
     }
 
     @Test

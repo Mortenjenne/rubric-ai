@@ -1,7 +1,10 @@
 package app.evaluation.llm;
 
 import app.evaluation.domain.InvalidModelOutputException;
+import app.evaluation.domain.LlmConfigurationException;
+import app.evaluation.domain.RateLimitedException;
 import app.evaluation.domain.SuggestedGradeValue;
+import app.evaluation.domain.UpstreamUnavailableException;
 import app.rubric.Level;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,11 +16,16 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.net.ConnectException;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * The production {@link LlmClient}: calls OpenAI's Chat Completions endpoint with native
@@ -26,6 +34,15 @@ import java.util.List;
  * provider returned it — the schema constrains the shape, but parsing and Bean Validation in
  * {@link app.evaluation.service.EvaluationService} remain the final gate; provider guarantees
  * are never trusted on their own.
+ *
+ * <p>Retry lives entirely behind this port, per the ADR on the provider port: a 429, a 5xx or a
+ * timeout is attempted up to {@link #MAX_ATTEMPTS} times in total — the initial call plus two
+ * backoff-delayed retries — exhausting into {@link RateLimitedException} or
+ * {@link UpstreamUnavailableException} respectively. A refused
+ * connection fails fast as {@link UpstreamUnavailableException} without spending the backoff
+ * budget — a provider that refuses the connection outright will not answer differently a moment
+ * later. A 401 or 400 means our request is wrong, not that the provider is struggling, so both
+ * fail immediately as {@link LlmConfigurationException} rather than being retried.
  */
 @Component
 public class OpenAiClient implements LlmClient {
@@ -42,10 +59,15 @@ public class OpenAiClient implements LlmClient {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration CALL_TIMEOUT = Duration.ofSeconds(90);
 
+    /** The initial call plus two retries — three attempts total, per the spec. */
+    private static final int MAX_ATTEMPTS = 3;
+    private static final Duration INITIAL_BACKOFF = Duration.ofMillis(500);
+
     private final RestClient restClient;
     private final LlmProperties llmProperties;
     private final OpenAiProperties openAiProperties;
     private final JsonNode responseFormat;
+    private final Consumer<Duration> backoff;
 
     @Autowired
     public OpenAiClient(LlmProperties llmProperties,
@@ -56,25 +78,26 @@ public class OpenAiClient implements LlmClient {
                         .baseUrl(BASE_URL)
                         .requestFactory(timeoutRequestFactory())
                         .build(),
-                llmProperties, openAiProperties, objectMapper);
+                llmProperties, openAiProperties, objectMapper, OpenAiClient::sleep);
     }
 
     OpenAiClient(RestClient restClient, LlmProperties llmProperties, OpenAiProperties openAiProperties,
                  ObjectMapper objectMapper) {
+        this(restClient, llmProperties, openAiProperties, objectMapper, duration -> { });
+    }
+
+    OpenAiClient(RestClient restClient, LlmProperties llmProperties, OpenAiProperties openAiProperties,
+                 ObjectMapper objectMapper, Consumer<Duration> backoff) {
         this.restClient = restClient;
         this.llmProperties = llmProperties;
         this.openAiProperties = openAiProperties;
         this.responseFormat = buildResponseFormat(objectMapper);
+        this.backoff = backoff;
     }
 
     @Override
     public String call(LlmRequest request) {
-        String apiKey = openAiProperties.apiKey();
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException(
-                    "OPENAI_API_KEY is not set; the OpenAI adapter cannot call the provider without it");
-        }
-
+        String apiKey = requireApiKey();
         OpenAiChatRequest body = new OpenAiChatRequest(
                 llmProperties.model(),
                 0,
@@ -83,6 +106,34 @@ public class OpenAiClient implements LlmClient {
                         new OpenAiMessage("user", request.userPrompt())),
                 responseFormat);
 
+        RuntimeException retryableFailure = null;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                return execute(body, apiKey);
+            } catch (HttpClientErrorException.TooManyRequests e) {
+                retryableFailure = new RateLimitedException("OpenAI rate-limited the request", e);
+            } catch (HttpServerErrorException e) {
+                retryableFailure = new UpstreamUnavailableException("OpenAI returned a server error", e);
+            } catch (HttpClientErrorException.Unauthorized e) {
+                throw new LlmConfigurationException("OpenAI rejected the request: invalid credentials", e);
+            } catch (HttpClientErrorException.BadRequest e) {
+                throw new LlmConfigurationException("OpenAI rejected the request as malformed", e);
+            } catch (ResourceAccessException e) {
+                if (e.getCause() instanceof ConnectException) {
+                    throw new UpstreamUnavailableException("Connection to OpenAI was refused", e);
+                }
+                retryableFailure = new UpstreamUnavailableException("OpenAI request timed out", e);
+            }
+
+            if (attempt < MAX_ATTEMPTS) {
+                backoff.accept(backoffFor(attempt));
+            }
+        }
+
+        throw retryableFailure;
+    }
+
+    private String execute(OpenAiChatRequest body, String apiKey) {
         OpenAiChatResponse response = restClient.post()
                 .uri(CHAT_COMPLETIONS_PATH)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
@@ -98,6 +149,27 @@ public class OpenAiClient implements LlmClient {
         }
 
         return content;
+    }
+
+    private String requireApiKey() {
+        String apiKey = openAiProperties.apiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new LlmConfigurationException(
+                    "OPENAI_API_KEY is not set; the OpenAI adapter cannot call the provider without it");
+        }
+        return apiKey;
+    }
+
+    private static Duration backoffFor(int attempt) {
+        return INITIAL_BACKOFF.multipliedBy(1L << (attempt - 1));
+    }
+
+    private static void sleep(Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static ClientHttpRequestFactory timeoutRequestFactory() {
