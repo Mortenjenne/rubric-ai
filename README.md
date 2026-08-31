@@ -2,7 +2,9 @@
 
 Backend service that judges a Submission against a fixed Rubric using a large language model,
 and returns a structured, advisory Evaluation. See [`CONTEXT.md`](CONTEXT.md) for the domain
-vocabulary and [`docs/adr/`](docs/adr/) for the decisions behind the design.
+vocabulary, [`docs/adr/`](docs/adr/) for the decisions behind the design, and
+[`docs/api.md`](docs/api.md) for the API contract (request/response shapes, error codes, and
+local setup) — written for building the frontend against this service without reading its source.
 
 ## Requirements
 
