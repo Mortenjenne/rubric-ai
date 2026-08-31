@@ -43,6 +43,13 @@ import java.util.stream.Collectors;
 @Service
 public class EvaluationService {
 
+    /** One re-ask, not a loop: the initial call plus exactly one retry on a rejected payload. */
+    private static final int MAX_ATTEMPTS = 2;
+
+    /** How much of a fabricated quote is echoed back into an error message — enough to identify
+     * which quote failed, without turning the response into a Submission excerpt. */
+    private static final int QUOTE_EXCERPT_LENGTH = 80;
+
     private final RubricRepository rubricRepository;
     private final EvaluationRepository evaluationRepository;
     private final LlmClient llmClient;
@@ -74,9 +81,9 @@ public class EvaluationService {
     public EvaluationResponse evaluate(EvaluationRequest request) {
         Rubric rubric = loadActiveRubric();
         LlmRequest llmRequest = promptBuilder.build(rubric, request.submissionText());
-        String raw = llmClient.call(llmRequest);
-        LlmEvaluationPayload payload = parseAndValidate(raw);
-        Map<String, LlmFindingPayload> findingsByCriterion = indexByCriterion(rubric, payload);
+        ValidatedPayload validated = requestValidatedPayload(rubric, llmRequest, request.submissionText());
+        LlmEvaluationPayload payload = validated.payload();
+        Map<String, LlmFindingPayload> findingsByCriterion = validated.findingsByCriterion();
 
         List<FindingDocument> findingDocuments = new ArrayList<>();
         for (Criterion criterion : rubric.getCriteria()) {
@@ -106,6 +113,60 @@ public class EvaluationService {
         return toResponse(evaluation);
     }
 
+    /**
+     * Calls the model and validates its response — deserialisation, Bean Validation, Rubric
+     * coverage and evidence verification — re-asking once if the first response is rejected.
+     * A payload that fails validation on the retry too ends the request with that failure.
+     */
+    private ValidatedPayload requestValidatedPayload(Rubric rubric, LlmRequest llmRequest, String submissionText) {
+        InvalidModelOutputException failure = null;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            String raw = llmClient.call(llmRequest);
+            try {
+                LlmEvaluationPayload payload = parseAndValidate(raw);
+                Map<String, LlmFindingPayload> findingsByCriterion = indexByCriterion(rubric, payload);
+                verifyEvidence(payload, submissionText);
+                return new ValidatedPayload(payload, findingsByCriterion);
+            } catch (InvalidModelOutputException e) {
+                failure = e;
+            }
+        }
+        throw failure;
+    }
+
+    private record ValidatedPayload(LlmEvaluationPayload payload, Map<String, LlmFindingPayload> findingsByCriterion) {
+    }
+
+    /**
+     * Every evidence quote must be a genuine excerpt of the Submission — the Educator's whole
+     * reason for trusting a Finding is that it quotes the Submission, and a fabricated quote is
+     * worse than none because it looks checkable and isn't. Comparison normalises whitespace on
+     * both sides before requiring a literal substring match; see ADR 0005 for why that
+     * normalisation, and only that normalisation, is applied.
+     */
+    private void verifyEvidence(LlmEvaluationPayload payload, String submissionText) {
+        String normalisedSubmission = normalise(submissionText);
+        for (LlmFindingPayload finding : payload.findings()) {
+            for (String evidence : finding.evidence()) {
+                if (!normalisedSubmission.contains(normalise(evidence))) {
+                    throw new InvalidModelOutputException(
+                            "Model response quotes text that does not appear verbatim in the Submission: \""
+                                    + excerpt(evidence) + "\"");
+                }
+            }
+        }
+    }
+
+    private String normalise(String text) {
+        return text.strip().replaceAll("\\s+", " ");
+    }
+
+    private String excerpt(String evidence) {
+        return evidence.length() <= QUOTE_EXCERPT_LENGTH
+                ? evidence
+                : evidence.substring(0, QUOTE_EXCERPT_LENGTH) + "…";
+    }
+
     private Rubric loadActiveRubric() {
         return rubricRepository.findFirstByOrderByVersionDesc()
                 .orElseThrow(() -> new IllegalStateException(
@@ -133,9 +194,9 @@ public class EvaluationService {
 
     /**
      * A Finding must reference exactly one Criterion from the active Rubric — no fewer, no
-     * more. Verifying quotes, enforcing Rubric order and the single re-ask belong to a later
-     * ticket; this is the minimum needed to build a response at all without a Finding for an
-     * unknown Criterion silently vanishing.
+     * more — so that no part of the Rubric is silently skipped or answered for a Criterion
+     * that does not exist. Rubric order is enforced separately, by the caller building the
+     * response by iterating the Rubric's own Criteria rather than trusting payload order.
      */
     private Map<String, LlmFindingPayload> indexByCriterion(Rubric rubric, LlmEvaluationPayload payload) {
         Set<String> knownCriteria = rubric.getCriteria().stream().map(Criterion::getKey).collect(Collectors.toSet());

@@ -21,6 +21,13 @@ public class FakeLlmClient implements LlmClient {
         return callCount;
     }
 
+    /** Clears any queued responses and resets the call count — the bean is a Spring singleton
+     * shared across every test in the class, so each test starts from a clean slate. */
+    public void reset() {
+        responses.clear();
+        callCount = 0;
+    }
+
     @Override
     public String call(LlmRequest request) {
         callCount++;

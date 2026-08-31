@@ -15,8 +15,10 @@ config, or a chain-of-responsibility with one link.
 ## Consequences
 
 The failure taxonomy the port raises is shaped for a fallback that does not exist yet: 429, 5xx and
-timeout are retried three times with exponential backoff; a schema-invalid response is re-asked once;
-401 and 400 are surfaced immediately, because a malformed request would be rejected by any provider.
-Today every exhausted path ends in `503` with an error code (`rate_limited`, `upstream_unavailable`,
-`invalid_model_output`). When Gemini lands, those same branches become failover points instead of
-terminal errors.
+timeout are retried three times with exponential backoff; a response the application rejects as
+untrustworthy is re-asked once — not just schema-invalid JSON, but any `InvalidModelOutputException`
+cause: malformed JSON, a Bean Validation failure, Rubric-coverage mismatches, and fabricated evidence
+quotes (see ADR 0005); 401 and 400 are surfaced immediately, because a malformed request would be
+rejected by any provider. Today every exhausted path ends in `503` with an error code (`rate_limited`,
+`upstream_unavailable`, `invalid_model_output`). When Gemini lands, those same branches become
+failover points instead of terminal errors.
