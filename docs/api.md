@@ -1,8 +1,9 @@
 # API contract
 
-This is the contract for `POST /api/evaluations`, written for whoever builds the frontend against
-this service without reading the backend source. See [`CONTEXT.md`](../CONTEXT.md) for the domain
-vocabulary (Submission, Rubric, Criterion, Level, Finding, Suggested grade) used below.
+This is the contract for the `/api/evaluations` endpoints, written for whoever builds the frontend
+against this service without reading the backend source. See [`CONTEXT.md`](../CONTEXT.md) for the
+domain vocabulary (Submission, Rubric, Criterion, Level, Finding, Suggested grade, Evaluation summary)
+used below.
 
 There is no generated OpenAPI/Swagger document. This file is hand-written and reviewed like any
 other change; keep it in sync with the code it describes.
@@ -33,7 +34,9 @@ If the UI presents `suggestedGrade` as a decided mark, or attaches a number to a
 misrepresents what this service does and what the assignment brief requires it to look like
 ("*en vejledende AI-baseret vurdering*", not "*en automatisk sand bedømmelse*").
 
-## Request
+## `POST /api/evaluations` — create an Evaluation
+
+### Request
 
 ```
 POST /api/evaluations
@@ -56,7 +59,7 @@ The submitted text is held in memory for the request only and is never written t
 [ADR 0003](../docs/adr/0003-submission-text-never-stored.md). Short quotes from it do end up
 persisted, inside each Finding's `evidence` array, because that's what makes a Finding checkable.
 
-## Response — `200 OK`
+### Response — `200 OK`
 
 Body is a single `Evaluation`:
 
@@ -93,11 +96,11 @@ Body is a single `Evaluation`:
 }
 ```
 
-### Fields
+#### Fields
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `evaluationId` | string (UUID) | Identifies the persisted Evaluation. Use this to refer back to a specific Evaluation; there is no `GET` endpoint for it yet. |
+| `evaluationId` | string (UUID) | Identifies the persisted Evaluation. Use this to fetch it again later with `GET /api/evaluations/{evaluationId}`, documented below. |
 | `rubricVersion` | integer | Version of the Rubric this Evaluation was judged against. A Rubric version is never edited in place once seeded, so this number is enough to know exactly which Criteria and Levels applied. |
 | `provider` | string | The LLM provider that produced this Evaluation, e.g. `"openai"`. Recorded because the suggested grade is not perfectly reproducible between runs — see [ADR 0002](../docs/adr/0002-llm-emitted-advisory-grade.md) — so a disagreement between two Evaluations should be explainable by checking whether provider, model or rubric version differ. |
 | `model` | string | The specific model id used, e.g. `"gpt-4o-mini"`. Same reproducibility rationale as `provider`. |
@@ -116,6 +119,62 @@ Body is a single `Evaluation`:
 | `findings[].evidence` | array of string | At least one entry. Verbatim quotes from the submitted text supporting this Finding — the service verifies each quote actually appears in the Submission before returning it, so these are safe to render as direct quotations. |
 | `dialogueQuestions` | array of string | Between 4 and 6 questions an Educator could put to the student in a follow-up conversation. Not tied to a specific Criterion. |
 
+## `GET /api/evaluations` — list Evaluations
+
+```
+GET /api/evaluations
+```
+
+No request body, no query parameters. There is no pagination or filtering yet — the endpoint returns
+every persisted Evaluation.
+
+Response, `200 OK`: a bare JSON array of **Evaluation summaries**, newest first (by `createdAt`). An
+empty store returns `200` with `[]`, not an error.
+
+```json
+[
+  {
+    "evaluationId": "3fa2b6c1-8e2b-4b7a-9f2a-1c9d9e6b6a11",
+    "rubricVersion": 1,
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "createdAt": "2026-08-31T09:14:22.531Z",
+    "suggestedGrade": {
+      "value": "10",
+      "advisory": true
+    }
+  }
+]
+```
+
+Each item carries the same `evaluationId`, `rubricVersion`, `provider`, `model`, `createdAt` and
+`suggestedGrade` fields documented above for the full Evaluation — see the Fields table above for what
+each one means — and nothing else: no `overallAssessment`, `findings` or `dialogueQuestions`. Fetch an
+item's full detail with `GET /api/evaluations/{evaluationId}` below.
+
+## `GET /api/evaluations/{id}` — fetch one Evaluation
+
+```
+GET /api/evaluations/{evaluationId}
+```
+
+`{evaluationId}` is the UUID returned as `evaluationId` by either endpoint above.
+
+Response, `200 OK`: the full Evaluation, identical in shape to the `POST` response documented above —
+`overallAssessment`, `findings` and `dialogueQuestions` included.
+
+Response, `404 Not Found`, no Evaluation exists with that id:
+
+```json
+{
+  "code": "evaluation_not_found",
+  "message": "No Evaluation exists with id 3fa2b6c1-8e2b-4b7a-9f2a-1c9d9e6b6a11"
+}
+```
+
+Response, `400 Bad Request`, the `{evaluationId}` path segment isn't a valid UUID: see the equivalent
+row in Errors below — the same undocumented-by-design default-body case as a blank `submissionText`.
+
 ## Errors
 
 Every error response (except the plain validation case below) has this shape:
@@ -132,14 +191,17 @@ your own user-facing text keyed off `code`.
 
 | HTTP status | `code` | Meaning | What the client should do |
 | --- | --- | --- | --- |
-| `400 Bad Request` | *(none — default Spring error body)* | `submissionText` was missing or blank. The body is Spring Boot's default error shape (`timestamp`, `status`, `error`, `path`), **not** the `{code, message}` shape above — there's no custom handler for request validation. | Fix the request client-side before sending; a blank submission should be caught in the UI and never reach the server. |
+| `400 Bad Request` | *(none — default Spring error body)* | Either `POST`'s `submissionText` was missing or blank, or `GET /api/evaluations/{id}`'s `{id}` path segment isn't a valid UUID. Both fall through to Spring Boot's default error shape (`timestamp`, `status`, `error`, `path`), **not** the `{code, message}` shape above — there's no custom handler for either case. | Fix the request client-side before sending; validate `submissionText` and any id in the UI so a malformed request never reaches the server. |
+| `404 Not Found` | `evaluation_not_found` | `GET /api/evaluations/{id}` was called with a well-formed UUID that doesn't match any persisted Evaluation. | Treat it as "nothing here" — show a not-found state. Retrying the same id won't help unless a new Evaluation with that id is later created, which never happens. |
 | `503 Service Unavailable` | `invalid_model_output` | The model's response couldn't be trusted — malformed JSON, failed validation, a Finding for a Criterion that doesn't exist or is missing, or a quote that doesn't actually appear in the Submission. The service already retried once internally before returning this. | Offer to retry the whole submission. Nothing was persisted. |
 | `503 Service Unavailable` | `rate_limited` | The provider rate-limited the request; the service's own retry budget (3 attempts with backoff) was already spent. | Offer to retry, ideally with a short delay or a "try again in a moment" message. Nothing was persisted. |
 | `503 Service Unavailable` | `upstream_unavailable` | The provider could not be reached, errored, or timed out; retries were already spent (or a refused connection skipped retrying, since it won't succeed a moment later). | Same as above: offer to retry. Nothing was persisted. |
 | `500 Internal Server Error` | `configuration_error` | Our bug, not the provider's outage: missing or invalid API credentials, a request the provider rejected as malformed, or any other 4xx from the provider (403, 404, 422, …) — none of those mean the provider is overloaded, so none of them get retried either. Retrying changes nothing. | Don't offer an immediate retry — surface this as a service problem to report, not a "try again" case. Nothing was persisted. |
 
-All four `{code, message}` error cases guarantee nothing was written to storage — a failed
-Evaluation never partially exists.
+All four `POST`-side `{code, message}` error cases (`invalid_model_output`, `rate_limited`,
+`upstream_unavailable`, `configuration_error`) guarantee nothing was written to storage — a failed
+Evaluation never partially exists. `evaluation_not_found` is a read-path error and has no bearing on
+storage.
 
 ## Local setup
 
@@ -171,7 +233,7 @@ Run the service against it:
 DB_PASSWORD=<same-password> ./mvnw spring-boot:run
 ```
 
-The service listens on port `8080` by default, so the endpoint above is
+The service listens on port `8080` by default, so the endpoints above are under
 `http://localhost:8080/api/evaluations` locally.
 
 On a clean database the service seeds Rubric version 1 for the praktikrapport Assignment on

@@ -1,5 +1,6 @@
 package app.evaluation.web;
 
+import app.evaluation.domain.EvaluationNotFoundException;
 import app.evaluation.domain.InvalidModelOutputException;
 import app.evaluation.domain.LlmConfigurationException;
 import app.evaluation.domain.RateLimitedException;
@@ -13,10 +14,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Maps the failure taxonomy to HTTP responses. {@code rate_limited}, {@code
  * upstream_unavailable} and {@code invalid_model_output} share {@code 503} — the request may
  * succeed if retried later. {@code configuration_error} is {@code 500}, kept out of that family
- * because it is our bug, not the provider's outage, and retrying it changes nothing.
+ * because it is our bug, not the provider's outage, and retrying it changes nothing. {@code
+ * evaluation_not_found} is a plain {@code 404} — a read for an id that never existed or already
+ * doesn't, not a provider failure at all.
  */
 @RestControllerAdvice
 public class EvaluationExceptionHandler {
+
+    @ExceptionHandler(EvaluationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEvaluationNotFound(EvaluationNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("evaluation_not_found", e.getMessage()));
+    }
 
     @ExceptionHandler(InvalidModelOutputException.class)
     public ResponseEntity<ErrorResponse> handleInvalidModelOutput(InvalidModelOutputException e) {

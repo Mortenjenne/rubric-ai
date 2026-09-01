@@ -1,5 +1,6 @@
 package app.evaluation.service;
 
+import app.evaluation.domain.EvaluationNotFoundException;
 import app.evaluation.domain.InvalidModelOutputException;
 import app.evaluation.llm.LlmClient;
 import app.evaluation.llm.LlmEvaluationPayload;
@@ -13,6 +14,7 @@ import app.evaluation.persistence.EvaluationRepository;
 import app.evaluation.persistence.FindingDocument;
 import app.evaluation.web.EvaluationRequest;
 import app.evaluation.web.EvaluationResponse;
+import app.evaluation.web.EvaluationSummaryResponse;
 import app.evaluation.web.FindingResponse;
 import app.evaluation.web.SuggestedGradeResponse;
 import app.rubric.Criterion;
@@ -218,6 +220,28 @@ public class EvaluationService {
         return byCriterion;
     }
 
+    public EvaluationResponse getEvaluation(UUID id) {
+        Evaluation evaluation = evaluationRepository.findById(id)
+                .orElseThrow(() -> new EvaluationNotFoundException("No Evaluation exists with id " + id));
+        return toResponse(evaluation);
+    }
+
+    public List<EvaluationSummaryResponse> listEvaluations() {
+        return evaluationRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    private EvaluationSummaryResponse toSummary(Evaluation evaluation) {
+        return new EvaluationSummaryResponse(
+                evaluation.getId().toString(),
+                evaluation.getRubricVersion(),
+                evaluation.getProvider(),
+                evaluation.getModel(),
+                evaluation.getCreatedAt(),
+                new SuggestedGradeResponse(evaluation.getSuggestedGrade()));
+    }
+
     private EvaluationResponse toResponse(Evaluation evaluation) {
         EvaluationDocument document = evaluation.getDocument();
         List<FindingResponse> findings = document.findings().stream()
@@ -226,14 +250,15 @@ public class EvaluationService {
                         f.strengths(), f.weaknesses(), f.improvements(), f.evidence()))
                 .toList();
 
+        EvaluationSummaryResponse summary = toSummary(evaluation);
         return new EvaluationResponse(
-                evaluation.getId().toString(),
-                evaluation.getRubricVersion(),
-                evaluation.getProvider(),
-                evaluation.getModel(),
-                evaluation.getCreatedAt(),
+                summary.evaluationId(),
+                summary.rubricVersion(),
+                summary.provider(),
+                summary.model(),
+                summary.createdAt(),
                 document.overallAssessment(),
-                new SuggestedGradeResponse(evaluation.getSuggestedGrade()),
+                summary.suggestedGrade(),
                 findings,
                 document.dialogueQuestions());
     }
