@@ -6,7 +6,6 @@ import app.evaluation.domain.UpstreamUnavailableException;
 import app.evaluation.llm.FakeLlmClient;
 import app.evaluation.persistence.Evaluation;
 import app.evaluation.persistence.EvaluationDocument;
-import app.evaluation.persistence.EvaluationRepository;
 import app.evaluation.persistence.FindingDocument;
 import app.evaluation.web.EvaluationRequest;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,15 +15,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
@@ -41,24 +33,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * real except the language model, per the spec's testing decisions. Assertions land on the
  * response body and the database, never on prompt strings or internal calls.
  */
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
 @Import(EvaluationTestConfig.class)
-class EvaluationIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @Autowired
-    private MockMvc mockMvc;
+class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
 
     @Autowired
     private FakeLlmClient fakeLlmClient;
-
-    @Autowired
-    private EvaluationRepository evaluationRepository;
 
     @Autowired
     private ObjectMapper objectMapper;

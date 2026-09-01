@@ -2,16 +2,7 @@ package app.evaluation;
 
 import app.evaluation.persistence.Evaluation;
 import app.evaluation.persistence.EvaluationDocument;
-import app.evaluation.persistence.EvaluationRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
 import java.util.List;
@@ -27,20 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * calls the language model, so fixtures are inserted directly through the repository rather
  * than via POST.
  */
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-class EvaluationListIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private EvaluationRepository evaluationRepository;
+class EvaluationListIntegrationTest extends AbstractEvaluationIntegrationTest {
 
     private Evaluation persistEvaluation(String provider, String model, String suggestedGrade, Instant createdAt) {
         Evaluation evaluation = new Evaluation(
