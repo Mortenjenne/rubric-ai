@@ -23,12 +23,16 @@ cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
 
 llm:
-  # Provider is fixed to openai until a second adapter lands (ADR 0001). gpt-4o-mini is
-  # OpenAI's cheap tier, supports Structured Outputs on Chat Completions, and — unlike the
-  # newer reasoning-style tiers (verified against the live API: gpt-5.6-luna rejects any
-  # temperature override with "Only the default (1) value is supported") — actually honours
-  # the spec's temperature-zero requirement. Override LLM_MODEL to a stronger tier (e.g.
-  # gpt-4.1 or gpt-4o) for the demo; confirm any override also accepts a custom temperature
-  # before relying on it. OPENAI_API_KEY must be set in the environment — never committed here.
+  # Provider is fixed to openai until a second adapter lands (ADR 0001). gpt-4o-mini's rejection
+  # rate on this Rubric's evidence-quote check (ADR 0005) was too high for student-facing use — a
+  # sample against the live API put it around one in eight — so the default here is gpt-5.4:
+  # verified against the live API to still accept temperature 0 (the spec's determinism
+  # requirement, ADR 0002) and, at that setting, produced zero rejected payloads across five
+  # sample runs against this Rubric. Every tier from gpt-5.5 onward is reasoning-only and rejects
+  # any temperature but its default of 1 ("Only the default (1) value is supported"), so gpt-5.4
+  # is the strongest tier compatible with the determinism requirement as of this writing — check
+  # again before assuming a newer tier is safe to move to. Override LLM_MODEL to a cheaper tier
+  # (e.g. gpt-4o-mini) for low-stakes local development. OPENAI_API_KEY must be set in the
+  # environment — never committed here.
   provider: ${LLM_PROVIDER:openai}
-  model: ${LLM_MODEL:gpt-4o-mini}
+  model: ${LLM_MODEL:gpt-5.4}
