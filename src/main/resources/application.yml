@@ -14,6 +14,14 @@ spring:
         jdbc:
           time_zone: UTC
 
+cors:
+  # Vite's default dev server, under both hostnames a browser reaches it by — an origin is matched
+  # as an exact string, so localhost and 127.0.0.1 are two different origins and both need listing.
+  # If Vite finds 5173 busy it binds 5174 and the browser blocks the request again; add the port
+  # here when that happens. Override with a comma-separated list for other environments (e.g. a
+  # deployed frontend origin) — CorsProperties binds it to a List<String>.
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+
 llm:
   # Provider is fixed to openai until a second adapter lands (ADR 0001). gpt-4o-mini is
   # OpenAI's cheap tier, supports Structured Outputs on Chat Completions, and — unlike the
