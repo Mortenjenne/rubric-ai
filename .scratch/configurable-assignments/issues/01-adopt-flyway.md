@@ -7,15 +7,24 @@ and silently skips constraints, which cannot state "every rubric now belongs to 
 
 **Blocked by:** nothing
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `flyway-core` and `flyway-database-postgresql` on the classpath.
-- [ ] `V1__baseline.sql` under `src/main/resources/db/migration` creates `rubrics`, `criteria`,
+- [x] `flyway-core` and `flyway-database-postgresql` on the classpath.
+- [x] `V1__baseline.sql` under `src/main/resources/db/migration` creates `rubrics`, `criteria`,
       `criterion_sources`, `criterion_levels` and `evaluations` exactly as Hibernate currently maps
       them, including the `jsonb` document column and the `position` order columns.
-- [ ] `spring.jpa.hibernate.ddl-auto` is `validate`, not `update`, so a mapping that drifts from the
+- [x] `spring.jpa.hibernate.ddl-auto` is `validate`, not `update`, so a mapping that drifts from the
       schema fails at startup rather than silently altering the database.
-- [ ] The existing Testcontainers integration tests run against the Flyway-built schema and pass
+- [x] The existing Testcontainers integration tests run against the Flyway-built schema and pass
       unchanged.
-- [ ] A developer with an existing local database is told in the README how to get to a clean state
+- [x] A developer with an existing local database is told in the README how to get to a clean state
       (drop and recreate), since baselining assumes the schema matches.
+
+## Comments
+
+Implemented in commit b45c642. `V1__baseline.sql` was not hand-derived from the entity annotations:
+Hibernate 6.6.53.Final's own `ddl-auto: update` was run against a real disposable Postgres 16
+container, the resulting schema captured with `pg_dump`, and the migration written to match that
+exactly. Verified by then running `ddl-auto: validate` against a fresh database migrated with only
+`V1__baseline.sql` (clean pass), and running the full Maven test suite (41 tests, including every
+Testcontainers integration test) against it (all green).
