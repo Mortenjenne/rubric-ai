@@ -9,29 +9,35 @@ land here.
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `V3__assignments.sql` truncates `evaluations` and drops the rubric tables, **with a comment in
+- [x] `V3__assignments.sql` truncates `evaluations` and drops the rubric tables, **with a comment in
       the migration explaining that the discarded rows are pre-auth development test runs and that a
       forward migration was deliberately rejected**, then creates `assignments`,
       `assignment_versions`, and the criteria/level/source-reference tables hanging off a version and
       off the draft.
-- [ ] `Assignment` belongs to exactly one Educator, has a title, a soft-delete flag, and exactly one
+- [x] `Assignment` belongs to exactly one Educator, has a title, a soft-delete flag, and exactly one
       Draft that is created with it and never removed.
-- [ ] `AssignmentVersion` carries a version number unique within its Assignment and starting at 1, an
+- [x] `AssignmentVersion` carries a version number unique within its Assignment and starting at 1, an
       Assessment stance, a Rubric, and (once issue 07 lands) Source material. No mapping, service or
       endpoint permits updating or deleting a persisted version.
-- [ ] `Rubric` is a value inside a Draft or a version — Criteria with their Level descriptors, Weights
+- [x] `Rubric` is a value inside a Draft or a version — Criteria with their Level descriptors, Weights
       and Source references — and no longer carries a version number, an assignment string, a
       `language` or a `note`.
-- [ ] `Level` and `SuggestedGradeValue` are untouched.
-- [ ] `RubricSeeder`, `RubricRepository.findFirstByOrderByVersionDesc()`, `RubricResource.language`,
+- [x] `Level` and `SuggestedGradeValue` are untouched.
+- [x] `RubricSeeder`, `RubricRepository.findFirstByOrderByVersionDesc()`, `RubricResource.language`,
       `RubricResource.note` and the unread `levels` array in the JSON resource are all deleted.
-- [ ] Criterion keys are assigned sequentially per Assignment (`c1`, `c2`, …) by the aggregate, are
+- [x] Criterion keys are assigned sequentially per Assignment (`c1`, `c2`, …) by the aggregate, are
       never derived from the Criterion name, and do not change when a Criterion is renamed or
       reordered.
-- [ ] Every repository query for an Assignment is scoped to an Educator id; there is no method that
+- [x] Every repository query for an Assignment is scoped to an Educator id; there is no method that
       can return another Educator's Assignment.
-- [ ] `EvaluationService` compiles against the new shape by loading an Assignment version explicitly;
+- [x] `EvaluationService` compiles against the new shape by loading an Assignment version explicitly;
       the endpoint contract change is issue 09's job, so a temporary internal seam here is acceptable
       as long as it is not a public endpoint.
+
+## Comments
+
+Implemented in commit 1cb8a28. The immutability of a persisted `AssignmentVersion` (and its Criteria)
+was made schema-enforced, not just mapping-enforced, in issue 06's follow-up migration
+(`V5__assignment_versions_immutable.sql`).
