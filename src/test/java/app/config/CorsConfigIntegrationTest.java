@@ -1,15 +1,8 @@
 package app.config;
 
+import app.evaluation.AbstractEvaluationIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -23,20 +16,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the real request before it ever reaches {@link app.evaluation.web.EvaluationController}.
  *
  * <p>The browser checks the header on both halves of the exchange, so the preflight and the
- * actual response are asserted separately. A full Spring context is needed because the policy is
- * only exercised through real handler mapping; the database it brings along goes unused.
+ * actual response are asserted separately. Reuses the evaluation feature's shared Testcontainers
+ * wiring — the policy is exercised through real handler mapping, and the actual (non-preflight)
+ * request needs a bearer token now that every {@code /api/**} endpoint requires one.
  */
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-class CorsConfigIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @Autowired
-    private MockMvc mockMvc;
+class CorsConfigIntegrationTest extends AbstractEvaluationIntegrationTest {
 
     @Test
     void preflightFromTheConfiguredFrontendOriginIsAllowed() throws Exception {
@@ -59,8 +43,23 @@ class CorsConfigIntegrationTest {
     @Test
     void theActualResponseAlsoCarriesTheAllowOriginHeader() throws Exception {
         mockMvc.perform(get("/api/evaluations")
-                        .header(HttpHeaders.ORIGIN, "http://localhost:5173"))
+                        .header(HttpHeaders.ORIGIN, "http://localhost:5173")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"));
+    }
+
+    /**
+     * Security's 401 is written by {@link app.security.web.JwtAuthenticationEntryPoint} before
+     * the request ever reaches Spring MVC's own CORS handling, so the header has to come from
+     * Security's own CORS support (enabled in {@link app.security.SecurityConfig}) or the
+     * browser would block the caller from reading this response too.
+     */
+    @Test
+    void anUnauthenticatedRejectionStillCarriesTheAllowOriginHeader() throws Exception {
+        mockMvc.perform(get("/api/evaluations")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:5173"))
+                .andExpect(status().isUnauthorized())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"));
     }
 

@@ -3,6 +3,7 @@ package app.evaluation;
 import app.evaluation.persistence.Evaluation;
 import app.evaluation.persistence.EvaluationDocument;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 
 import java.time.Instant;
 import java.util.List;
@@ -33,7 +34,8 @@ class EvaluationListIntegrationTest extends AbstractEvaluationIntegrationTest {
         Evaluation older = persistEvaluation("openai", "gpt-4o-mini", "7", Instant.parse("2026-01-01T00:00:00Z"));
         Evaluation newer = persistEvaluation("openai", "gpt-4o-mini", "10", Instant.parse("2026-02-01T00:00:00Z"));
 
-        mockMvc.perform(get("/api/evaluations"))
+        mockMvc.perform(get("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].evaluationId").value(newer.getId().toString()))
@@ -53,7 +55,8 @@ class EvaluationListIntegrationTest extends AbstractEvaluationIntegrationTest {
     void listingAgainstAnEmptyStoreReturnsAnEmptyArray() throws Exception {
         evaluationRepository.deleteAll();
 
-        mockMvc.perform(get("/api/evaluations"))
+        mockMvc.perform(get("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }

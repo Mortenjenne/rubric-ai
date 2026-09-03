@@ -1,13 +1,22 @@
 package app.evaluation;
 
+import app.educator.Educator;
+import app.educator.EducatorRepository;
 import app.evaluation.persistence.EvaluationRepository;
+import app.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Shared Testcontainers Postgres and MockMvc/repository wiring for the evaluation feature's
@@ -23,7 +32,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-abstract class AbstractEvaluationIntegrationTest {
+@ActiveProfiles("test")
+public abstract class AbstractEvaluationIntegrationTest {
+
+    private static final String TEST_EDUCATOR_EMAIL = "test-educator@example.com";
 
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
@@ -43,4 +55,38 @@ abstract class AbstractEvaluationIntegrationTest {
 
     @Autowired
     protected EvaluationRepository evaluationRepository;
+
+    @Autowired
+    protected EducatorRepository educatorRepository;
+
+    @Autowired
+    protected PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    protected Clock clock;
+
+    /**
+     * The {@code Authorization} header value for a seeded test Educator, created directly
+     * through the repository (not through {@code EducatorSeeder}, which only reads from
+     * configuration) the first time a test in the class asks for it.
+     */
+    protected String authorizationHeader() {
+        return "Bearer " + jwtService.issue(seedEducator(TEST_EDUCATOR_EMAIL, "Test Educator",
+                "irrelevant-test-password").getId());
+    }
+
+    /**
+     * Creates an Educator directly through the repository, or returns the existing one for this
+     * email — the one seeding path every integration test that needs a real account shares,
+     * rather than each rolling its own.
+     */
+    protected Educator seedEducator(String email, String displayName, String password) {
+        return educatorRepository.findByEmail(email)
+                .orElseGet(() -> educatorRepository.save(new Educator(
+                        UUID.randomUUID(), email, displayName,
+                        passwordEncoder.encode(password), Instant.now(clock))));
+    }
 }

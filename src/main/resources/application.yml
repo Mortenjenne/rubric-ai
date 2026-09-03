@@ -22,6 +22,23 @@ cors:
   # deployed frontend origin) — CorsProperties binds it to a List<String>.
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
 
+app:
+  # Educator accounts seeded at startup — there is no registration endpoint. Add one entry per
+  # account; each password must come from its own environment variable so nothing is committed.
+  # An entry whose password variable is unset is skipped with a warning, not a startup failure.
+  educators: []
+  #  - email: educator@example.com
+  #    display-name: Some Educator
+  #    password: ${EDUCATOR1_PASSWORD:}
+
+jwt:
+  # jwt.secret is deliberately absent here: it is bound straight from the JWT_SECRET environment
+  # variable (see JwtProperties), the same way OPENAI_API_KEY is never named in this file either.
+  # Generate a random secret of at least 32 bytes, e.g. `openssl rand -base64 48`.
+  #
+  # Long-lived with no refresh (per the spec) — an Educator logs in again once this expires.
+  expiration: ${JWT_EXPIRATION:30d}
+
 llm:
   # Provider is fixed to openai until a second adapter lands (ADR 0001). gpt-4o-mini's rejection
   # rate on this Rubric's evidence-quote check (ADR 0005) was too high for student-facing use — a

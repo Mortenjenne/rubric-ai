@@ -15,10 +15,10 @@ local setup) — written for building the frontend against this service without 
 ## Configuration
 
 The database connection and its credentials are read from the environment; no credential is
-committed. Set at least `DB_PASSWORD` before starting the database or the application. Calling
-the real language model additionally requires `OPENAI_API_KEY` — without it, the app still
-starts (only the fake adapter is used in tests), but posting a Submission against the real
-adapter fails fast:
+committed. Set at least `DB_PASSWORD` and `JWT_SECRET` before starting the application — the
+service refuses to start without a signing secret. Calling the real language model additionally
+requires `OPENAI_API_KEY` — without it, the app still starts (only the fake adapter is used in
+tests), but posting a Submission against the real adapter fails fast:
 
 | Variable         | Used by       | Default        |
 | ---------------- | ------------- | -------------- |
@@ -27,6 +27,8 @@ adapter fails fast:
 | `DB_NAME`        | app, compose  | `rubricai`     |
 | `DB_USER`        | app, compose  | `rubricai`     |
 | `DB_PASSWORD`    | app, compose  | *(required)*   |
+| `JWT_SECRET`     | app           | *(required)*   |
+| `JWT_EXPIRATION` | app           | `30d`          |
 | `OPENAI_API_KEY` | app           | *(required)*   |
 | `LLM_PROVIDER`   | app           | `openai`       |
 | `LLM_MODEL`      | app           | `gpt-4o-mini`  |
@@ -35,6 +37,30 @@ adapter fails fast:
 `temperature` on Chat Completions — OpenAI's newer reasoning-style tiers (e.g. `gpt-5.6-luna`)
 accept requests but reject any temperature override, so confirm both before overriding the
 default.
+
+`JWT_SECRET` signs every login token; generate at least 32 random bytes, e.g.
+`openssl rand -base64 48`. There is no committed default on purpose — a deployment that forgets
+to set it fails to start rather than silently signing every token with the same well-known key.
+
+### Educator accounts
+
+There is no registration endpoint: an Educator account only comes to exist through
+`app.educators` in configuration, seeded once at startup. Add one entry per account under
+`app.educators` in `application.yml`, with the password sourced from its own environment
+variable placeholder so no credential is ever committed, e.g.:
+
+```yaml
+app:
+  educators:
+    - email: educator@example.com
+      display-name: Some Educator
+      password: ${EDUCATOR1_PASSWORD:}
+```
+
+An entry whose password variable is unset, or whose password is shorter than 12 characters, is
+skipped with a warning at startup rather than failing it — so a partially configured environment
+still boots. An existing account is never updated by the seeder; change a seeded password
+directly against the database.
 
 ## Running locally
 

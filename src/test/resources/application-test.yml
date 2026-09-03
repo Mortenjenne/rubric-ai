@@ -1,0 +1,5 @@
+# Layered on top of the main application.yml (see @ActiveProfiles("test")) to supply the one
+# value that has no committed default anywhere: JWT_SECRET is required in every environment, so
+# a full Spring context test needs its own here rather than depending on a developer's shell.
+jwt:
+  secret: "test-only-signing-secret-do-not-use-outside-the-test-suite-at-least-32-bytes"

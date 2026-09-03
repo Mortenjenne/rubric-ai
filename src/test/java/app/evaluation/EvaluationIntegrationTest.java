@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import java.util.UUID;
@@ -143,6 +144,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         long countBefore = evaluationRepository.count();
 
         mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody()))
                 .andExpect(status().isServiceUnavailable())
@@ -157,6 +159,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         fakeLlmClient.enqueue(VALID_MODEL_PAYLOAD);
 
         mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody()))
                 .andExpect(status().isOk())
@@ -185,6 +188,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         fakeLlmClient.enqueue(VALID_MODEL_PAYLOAD);
 
         String response = mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody()))
                 .andExpect(status().isOk())
@@ -214,6 +218,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         fakeLlmClient.enqueue(VALID_MODEL_PAYLOAD);
 
         String response = mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody()))
                 .andExpect(status().isOk())
@@ -338,6 +343,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         fakeLlmClient.enqueue(payload);
 
         mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new EvaluationRequest(submissionWithMidSentenceLineBreak))))
@@ -353,6 +359,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         fakeLlmClient.enqueue(VALID_MODEL_PAYLOAD);
 
         mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody()))
                 .andExpect(status().isOk())
@@ -373,6 +380,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         long countBefore = evaluationRepository.count();
 
         mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody()))
                 .andExpect(status().is(expectedStatus))
@@ -419,6 +427,7 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
         fakeLlmClient.enqueue(objectMapper.writeValueAsString(root));
 
         mockMvc.perform(post("/api/evaluations")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody()))
                 .andExpect(status().isOk())

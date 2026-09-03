@@ -4,6 +4,7 @@ import app.evaluation.persistence.Evaluation;
 import app.evaluation.persistence.EvaluationDocument;
 import app.evaluation.persistence.FindingDocument;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 
 import java.time.Instant;
 import java.util.List;
@@ -37,7 +38,8 @@ class EvaluationByIdIntegrationTest extends AbstractEvaluationIntegrationTest {
                         List.of("Hvordan valgte du løsningen?", "Hvad lærte du?")));
         evaluationRepository.save(evaluation);
 
-        mockMvc.perform(get("/api/evaluations/{id}", evaluation.getId()))
+        mockMvc.perform(get("/api/evaluations/{id}", evaluation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.evaluationId").value(evaluation.getId().toString()))
                 .andExpect(jsonPath("$.rubricVersion").value(1))
@@ -58,7 +60,8 @@ class EvaluationByIdIntegrationTest extends AbstractEvaluationIntegrationTest {
     void fetchingAnUnknownIdReturns404WithEvaluationNotFound() throws Exception {
         UUID unknownId = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/evaluations/{id}", unknownId))
+        mockMvc.perform(get("/api/evaluations/{id}", unknownId)
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("evaluation_not_found"));
     }
@@ -70,7 +73,8 @@ class EvaluationByIdIntegrationTest extends AbstractEvaluationIntegrationTest {
      */
     @Test
     void fetchingAMalformedIdReturnsTheFrameworksDefaultBadRequestBody() throws Exception {
-        mockMvc.perform(get("/api/evaluations/{id}", "not-a-uuid"))
+        mockMvc.perform(get("/api/evaluations/{id}", "not-a-uuid")
+                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").doesNotExist());
     }
