@@ -17,10 +17,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A frozen snapshot of everything the model is shown: the Rubric and the Assessment stance, and
- * (once Source material lands) the Source material. Numbered per Assignment, starting at 1. No
- * mapping, service or endpoint updates or deletes a persisted version — it carries no setters
- * after construction, and nothing here ever calls one on its Criteria either.
+ * A frozen snapshot of everything the model is shown: the title, the Rubric and the Assessment
+ * stance, and (once Source material lands) the Source material. Numbered per Assignment, starting
+ * at 1. No mapping, service or endpoint updates or deletes a persisted version — it carries no
+ * setters after construction, and nothing here ever calls one on its Criteria either.
  */
 @Entity
 @Table(name = "assignment_versions")
@@ -35,6 +35,9 @@ public class AssignmentVersion {
 
     @Column(name = "version_number", nullable = false)
     private int versionNumber;
+
+    @Column(nullable = false)
+    private String title;
 
     @Column(name = "assessment_stance", nullable = false)
     private String assessmentStance;
@@ -54,9 +57,10 @@ public class AssignmentVersion {
         // for Hibernate
     }
 
-    AssignmentVersion(UUID id, int versionNumber, String assessmentStance, Instant createdAt) {
+    AssignmentVersion(UUID id, int versionNumber, String title, String assessmentStance, Instant createdAt) {
         this.id = id;
         this.versionNumber = versionNumber;
+        this.title = title;
         this.assessmentStance = assessmentStance;
         this.createdAt = createdAt;
     }
@@ -76,6 +80,10 @@ public class AssignmentVersion {
 
     public int getVersionNumber() {
         return versionNumber;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public String getAssessmentStance() {

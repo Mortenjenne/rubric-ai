@@ -1,6 +1,7 @@
 package app.assignment.web;
 
 import app.assignment.AssignmentNotFoundException;
+import app.assignment.AssignmentValidationException;
 import app.template.TemplateNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +11,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * Maps Assignment failures to HTTP responses. An unknown Template id or an Assignment id that
  * doesn't resolve for the calling Educator are both plain 404s — the id is simply wrong (or
- * belongs to someone else), not something a retry could fix.
+ * belongs to someone else), not something a retry could fix. A failed publish is a 400 carrying
+ * every validation failure, not just the first.
  */
 @RestControllerAdvice
 public class AssignmentExceptionHandler {
@@ -25,5 +27,11 @@ public class AssignmentExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAssignmentNotFound(AssignmentNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("assignment_not_found", e.getMessage()));
+    }
+
+    @ExceptionHandler(AssignmentValidationException.class)
+    public ResponseEntity<ValidationErrorResponse> handleAssignmentValidation(AssignmentValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ValidationErrorResponse("draft_invalid", e.getErrors()));
     }
 }

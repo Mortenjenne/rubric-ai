@@ -134,10 +134,17 @@ public class Assignment {
         return "c" + nextCriterionSequence++;
     }
 
+    /** The structural failures that would block publishing the current Draft — empty when the
+     * Draft is publishable. See {@link DraftPublishValidator} for exactly what is checked. */
+    public List<String> draftValidationErrorsForPublish() {
+        return DraftPublishValidator.errorsFor(draft);
+    }
+
     /** Snapshots the Draft's Rubric and Assessment stance into a new, frozen AssignmentVersion,
      * numbered one higher than the current highest. Leaves the Draft unchanged, so the
      * Educator's next edit continues from where they were. Carries no validation of its own —
-     * that gate belongs to the publish endpoint, not the aggregate. */
+     * call {@link #draftValidationErrorsForPublish()} first; that gate belongs to the publish
+     * endpoint, not the aggregate. */
     public AssignmentVersion publishVersion(Instant createdAt) {
         int versionNumber = versions.stream()
                 .mapToInt(AssignmentVersion::getVersionNumber)
@@ -145,7 +152,7 @@ public class Assignment {
                 .orElse(0) + 1;
 
         AssignmentVersion version = new AssignmentVersion(
-                UUID.randomUUID(), versionNumber, draft.getAssessmentStance(), createdAt);
+                UUID.randomUUID(), versionNumber, title, draft.getAssessmentStance(), createdAt);
         version.assignTo(this);
         for (Criterion criterion : draft.getCriteria()) {
             version.addCriterion(new Criterion(

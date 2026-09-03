@@ -52,6 +52,12 @@ public class AssignmentController {
         return assignmentService.replaceDraft(id, principal.educatorId(), request);
     }
 
+    @PostMapping("/{id}/versions")
+    public AssignmentVersionResponse publish(@PathVariable UUID id,
+                                              @AuthenticationPrincipal EducatorPrincipal principal) {
+        return assignmentService.publish(id, principal.educatorId());
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteAssignment(@PathVariable UUID id, @AuthenticationPrincipal EducatorPrincipal principal) {
