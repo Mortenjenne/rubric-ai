@@ -52,6 +52,16 @@ public class Draft {
         this.assessmentStance = assessmentStance;
     }
 
+    /** Replaces the whole Criteria list: a Criterion the new list doesn't include is gone
+     * (orphan-removed on flush), and every entry in {@code newCriteria} becomes a fresh row in
+     * the given order — reordering is just supplying the list in a different order. */
+    void replaceCriteria(List<Criterion> newCriteria) {
+        criteria.clear();
+        for (Criterion criterion : newCriteria) {
+            addCriterion(criterion);
+        }
+    }
+
     public UUID getId() {
         return id;
     }

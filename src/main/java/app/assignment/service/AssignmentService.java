@@ -1,11 +1,18 @@
 package app.assignment.service;
 
 import app.assignment.Assignment;
+import app.assignment.AssignmentNotFoundException;
 import app.assignment.AssignmentRepository;
+import app.assignment.AssignmentVersion;
 import app.assignment.Criterion;
+import app.assignment.DraftCriterionInput;
 import app.assignment.web.AssignmentResponse;
+import app.assignment.web.AssignmentSummaryResponse;
+import app.assignment.web.AssignmentVersionSummaryResponse;
 import app.assignment.web.CriterionResponse;
+import app.assignment.web.DraftCriterionRequest;
 import app.assignment.web.DraftResponse;
+import app.assignment.web.ReplaceDraftRequest;
 import app.educator.Educator;
 import app.educator.EducatorRepository;
 import app.template.Template;
@@ -17,14 +24,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Creates an Assignment by copying a bundled Template: its Rubric and Assessment stance land in
- * a fresh Draft owned by the calling Educator, with no published versions. The copy is
- * independent of the Template from the moment it is made — {@link Assignment#addDraftCriterion}
- * builds brand new Criterion rows, so nothing here is shared with the Template or with any other
- * Assignment copied from it.
+ * The Assignment authoring surface: creating one from a Template, listing and fetching an
+ * Educator's own Assignments, replacing a Draft wholesale, and soft-deleting an Assignment. Every
+ * lookup is scoped to the calling Educator, so another Educator's Assignment is a plain
+ * {@link AssignmentNotFoundException} — a {@code 404}, never a {@code 403}.
  */
 @Service
 public class AssignmentService {
@@ -61,11 +70,72 @@ public class AssignmentService {
         return toResponse(assignmentRepository.save(assignment));
     }
 
+    @Transactional(readOnly = true)
+    public List<AssignmentSummaryResponse> listAssignments(UUID educatorId) {
+        return assignmentRepository.findAllByEducatorIdAndDeletedFalseOrderByUpdatedAtDesc(educatorId).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AssignmentResponse getAssignment(UUID id, UUID educatorId) {
+        return toResponse(findOwnedAssignment(id, educatorId));
+    }
+
+    @Transactional
+    public AssignmentResponse replaceDraft(UUID id, UUID educatorId, ReplaceDraftRequest request) {
+        Assignment assignment = findOwnedAssignment(id, educatorId);
+        List<DraftCriterionInput> criteria = nullToEmpty(request.criteria()).stream().map(this::toInput).toList();
+        assignment.replaceDraft(nullToEmpty(request.title()), nullToEmpty(request.assessmentStance()), criteria,
+                Instant.now(clock));
+        return toResponse(assignmentRepository.save(assignment));
+    }
+
+    @Transactional
+    public void deleteAssignment(UUID id, UUID educatorId) {
+        Assignment assignment = findOwnedAssignment(id, educatorId);
+        assignment.softDelete();
+        assignmentRepository.save(assignment);
+    }
+
+    private Assignment findOwnedAssignment(UUID id, UUID educatorId) {
+        return assignmentRepository.findByIdAndEducatorId(id, educatorId)
+                .orElseThrow(() -> new AssignmentNotFoundException("No Assignment exists with id " + id));
+    }
+
+    private DraftCriterionInput toInput(DraftCriterionRequest request) {
+        return new DraftCriterionInput(request.key(), nullToEmpty(request.name()), request.weight(),
+                nullToEmpty(request.description()),
+                request.sourceReferences() == null ? List.of() : request.sourceReferences(),
+                request.levels() == null ? Map.of() : request.levels());
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private List<DraftCriterionRequest> nullToEmpty(List<DraftCriterionRequest> value) {
+        return value == null ? List.of() : value;
+    }
+
+    private AssignmentSummaryResponse toSummary(Assignment assignment) {
+        Optional<AssignmentVersion> latestVersion = assignment.latestVersion();
+        return new AssignmentSummaryResponse(
+                assignment.getId(),
+                assignment.getTitle(),
+                latestVersion.isPresent(),
+                latestVersion.map(AssignmentVersion::getVersionNumber).orElse(null),
+                assignment.getUpdatedAt());
+    }
+
     private AssignmentResponse toResponse(Assignment assignment) {
         DraftResponse draft = new DraftResponse(
                 assignment.getDraft().getAssessmentStance(),
                 assignment.getDraft().getCriteria().stream().map(this::toResponse).toList());
-        return new AssignmentResponse(assignment.getId(), assignment.getTitle(), draft);
+        List<AssignmentVersionSummaryResponse> versions = assignment.getVersions().stream()
+                .map(v -> new AssignmentVersionSummaryResponse(v.getVersionNumber(), v.getCreatedAt()))
+                .toList();
+        return new AssignmentResponse(assignment.getId(), assignment.getTitle(), draft, versions);
     }
 
     private CriterionResponse toResponse(Criterion criterion) {

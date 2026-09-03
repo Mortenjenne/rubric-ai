@@ -52,6 +52,9 @@ public class Assignment {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     // An Assignment is a small aggregate always used whole, so its Draft and versions are loaded
     // eagerly rather than left as lazy proxies outside a session.
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
@@ -76,6 +79,7 @@ public class Assignment {
         this.educator = educator;
         this.title = title;
         this.createdAt = createdAt;
+        this.updatedAt = createdAt;
         this.draft = new Draft(UUID.randomUUID());
     }
 
@@ -98,6 +102,32 @@ public class Assignment {
      * Assignment is created, since a fresh Draft otherwise starts blank. */
     public void setDraftAssessmentStance(String assessmentStance) {
         draft.replaceAssessmentStance(assessmentStance);
+    }
+
+    /** Replaces the whole Draft in one call: the title, the Assessment stance, and the ordered
+     * list of Criteria. A Criterion carrying an existing key keeps it across the rename or
+     * reorder; one with no key is new and is assigned the aggregate's next sequential key. Never
+     * validates — a half-written Rubric must stay saveable — and never touches a published
+     * version. */
+    public void replaceDraft(String title, String assessmentStance, List<DraftCriterionInput> criteria,
+                              Instant editedAt) {
+        this.title = title;
+        draft.replaceAssessmentStance(assessmentStance);
+
+        List<Criterion> newCriteria = new ArrayList<>();
+        for (DraftCriterionInput input : criteria) {
+            String key = (input.key() == null || input.key().isBlank()) ? nextCriterionKey() : input.key();
+            newCriteria.add(new Criterion(key, input.name(), input.weight(), input.description(),
+                    input.sourceReferences(), input.levels()));
+        }
+        draft.replaceCriteria(newCriteria);
+        this.updatedAt = editedAt;
+    }
+
+    /** Hides this Assignment from its Educator's list while keeping its rows, so an Evaluation
+     * produced against it keeps resolving. */
+    public void softDelete() {
+        this.deleted = true;
     }
 
     private String nextCriterionKey() {
@@ -148,6 +178,10 @@ public class Assignment {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
     public Draft getDraft() {
