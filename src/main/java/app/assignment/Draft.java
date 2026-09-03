@@ -48,6 +48,10 @@ public class Draft {
         criteria.add(criterion);
     }
 
+    void replaceAssessmentStance(String assessmentStance) {
+        this.assessmentStance = assessmentStance;
+    }
+
     public UUID getId() {
         return id;
     }

@@ -94,6 +94,12 @@ public class Assignment {
         return addDraftCriterion(nextCriterionKey(), name, weight, description, sourceReferences, levels);
     }
 
+    /** Replaces the Draft's Assessment stance — how a Template's stance is copied in when the
+     * Assignment is created, since a fresh Draft otherwise starts blank. */
+    public void setDraftAssessmentStance(String assessmentStance) {
+        draft.replaceAssessmentStance(assessmentStance);
+    }
+
     private String nextCriterionKey() {
         return "c" + nextCriterionSequence++;
     }

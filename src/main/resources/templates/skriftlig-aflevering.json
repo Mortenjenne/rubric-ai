@@ -1,0 +1,60 @@
+{
+  "id": "skriftlig-aflevering",
+  "title": "Skriftlig aflevering",
+  "description": "En generisk skabelon til en skriftlig aflevering, uafhængig af fag. Brug den som udgangspunkt og tilpas kriterier og niveaubeskrivelser til din egen opgave.",
+  "assessmentStance": "Vurder på det niveau, uddannelsen normalt forventer af denne opgavetype - hverken skærpet eller lempet i forhold til den almindelige standard for faget. Lås dig ikke fast på bestemte formuleringer eller fagord; vurder i stedet, om indholdet reelt viser det, kriteriet efterspørger.",
+  "criteria": [
+    {
+      "id": "loesning",
+      "name": "Faglig løsning",
+      "weight": 40,
+      "sources": [],
+      "description": "Om opgaven er løst korrekt, og om resultaterne er retvisende.",
+      "levels": {
+        "Udmærket": "Opgaven er løst korrekt og fuldstændigt, og resultaterne er konsistente og velbegrundede.",
+        "Tilfredsstillende": "Opgaven er løst korrekt i det væsentlige, men enkelte dele mangler præcision eller er ufuldstændige.",
+        "Acceptabelt": "Opgaven er delvist løst; flere resultater er unøjagtige eller kun delvist underbygget.",
+        "Mangelfuldt": "Opgaven er ikke løst, eller resultaterne er forkerte eller usammenhængende."
+      }
+    },
+    {
+      "id": "metode",
+      "name": "Metode og fremgangsmåde",
+      "weight": 25,
+      "sources": [],
+      "description": "Om den valgte metode eller fremgangsmåde er hensigtsmæssig og tydeligt beskrevet.",
+      "levels": {
+        "Udmærket": "Metoden er velvalgt og beskrevet så trin for trin, at fremgangsmåden kan følges og genskabes.",
+        "Tilfredsstillende": "Metoden er velvalgt, men enkelte trin i fremgangsmåden er kun antydet.",
+        "Acceptabelt": "Metoden er til stede, men valget er ikke begrundet, eller fremgangsmåden er svær at følge.",
+        "Mangelfuldt": "Metoden fremgår ikke, eller den valgte fremgangsmåde passer ikke til opgaven."
+      }
+    },
+    {
+      "id": "struktur",
+      "name": "Struktur og formidling",
+      "weight": 20,
+      "sources": [],
+      "description": "Om besvarelsen er struktureret klart og formidlet, så fremgangsmåden kan følges af en læser.",
+      "levels": {
+        "Udmærket": "Besvarelsen er klart struktureret, og hvert trin i argumentationen eller beregningen er tydeligt formidlet.",
+        "Tilfredsstillende": "Besvarelsen er overvejende velstruktureret, men enkelte overgange eller mellemregninger kunne være tydeligere.",
+        "Acceptabelt": "Strukturen er til stede, men flere trin er svære at følge uden selv at udfylde hullerne.",
+        "Mangelfuldt": "Besvarelsen mangler struktur, eller fremgangsmåden kan ikke følges af en læser."
+      }
+    },
+    {
+      "id": "refleksion",
+      "name": "Refleksion og vurdering",
+      "weight": 15,
+      "sources": [],
+      "description": "Om den studerende vurderer egne resultater og valg, og forholder sig til deres holdbarhed.",
+      "levels": {
+        "Udmærket": "Den studerende vurderer selvstændigt resultaternes holdbarhed og begrunder de valg, der blev truffet undervejs.",
+        "Tilfredsstillende": "Den studerende vurderer resultaterne, men begrundelsen for enkelte valg mangler.",
+        "Acceptabelt": "Refleksionen er overfladisk - resultaterne konstateres uden en egentlig vurdering af dem.",
+        "Mangelfuldt": "Der er ingen vurdering af resultaterne eller af de valg, der blev truffet."
+      }
+    }
+  ]
+}

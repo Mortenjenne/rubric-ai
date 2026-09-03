@@ -1,14 +1,8 @@
 {
-  "version": 1,
-  "assignment": "Praktikrapport, 5. semester, datamatikeruddannelsen",
-  "language": "da",
-  "levels": [
-    "Mangelfuldt",
-    "Acceptabelt",
-    "Tilfredsstillende",
-    "Udmærket"
-  ],
-  "note": "Niveauerne er kvalitetsbånd, ikke karakterer. Vægtene er vejledende for modellens fokus - der regnes ikke på dem.",
+  "id": "praktikrapport",
+  "title": "Praktikrapport, 5. semester, datamatikeruddannelsen",
+  "description": "Bedømmelsesskema til praktikrapporten på datamatikeruddannelsens 5. semester: formkrav, læringsmål og EK's kerneværdier Dare, Share, Care.",
+  "assessmentStance": "Uddannelsen er en erhvervsakademiuddannelse — en kort videregående uddannelse, ikke en universitetsuddannelse. Forvent praksisnær refleksion over konkret arbejde i en virksomhed. Forvent ikke akademisk stringens, forskningsmetode, litteraturgennemgang eller teoretisk dybde på universitetsniveau. Læg ikke krav ind i vurderingen, som ikke fremgår af bedømmelsesskemaet.\n\nLed efter implicit og indholdsmæssigt belæg for kriterierne. Forvent ikke, og kræv ikke, at den studerende bruger kriteriernes eller værdiernes præcise navne — den studerende behøver for eksempel ikke at skrive ordene \"Dare\", \"Share\" eller \"Care\". Anfør aldrig fraværet af sådanne nøgleord som en svaghed eller et forbedringsforslag. Vurder i stedet, om indholdet — de konkrete episoder, handlinger, valg og refleksioner, den studerende beskriver — viser det, kriteriet handler om.\n\nEn svaghed skal handle om indhold, der mangler eller kun er tyndt belagt — ikke om ordvalg, formuleringer eller manglende fagtermer.",
   "criteria": [
     {
       "id": "formkrav",

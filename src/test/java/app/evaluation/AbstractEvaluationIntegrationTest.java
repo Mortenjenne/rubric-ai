@@ -74,8 +74,19 @@ public abstract class AbstractEvaluationIntegrationTest {
      * configuration) the first time a test in the class asks for it.
      */
     protected String authorizationHeader() {
-        return "Bearer " + jwtService.issue(seedEducator(TEST_EDUCATOR_EMAIL, "Test Educator",
-                "irrelevant-test-password").getId());
+        return authorizationHeaderFor(seedEducator(TEST_EDUCATOR_EMAIL, "Test Educator",
+                "irrelevant-test-password"));
+    }
+
+    /**
+     * The {@code Authorization} header value for an arbitrary seeded Educator — for a test that
+     * must not create Assignments under {@link #TEST_EDUCATOR_EMAIL}, since the Postgres
+     * container (and so that account's Assignment history) is shared across every integration
+     * test class, and {@link app.evaluation.service.EvaluationService}'s temporary seam picks
+     * that Educator's most recently created Assignment.
+     */
+    protected String authorizationHeaderFor(Educator educator) {
+        return "Bearer " + jwtService.issue(educator.getId());
     }
 
     /**
