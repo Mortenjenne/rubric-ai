@@ -58,10 +58,18 @@ actually judged it.
 
 ## Schema
 
-Hibernate manages the schema (`ddl-auto: update`) at this stage: it creates tables and adds
-columns as entities change, but it never drops or narrows a column. This is a deliberate,
-temporary choice for early development — don't rely on it to clean up a removed or renamed
-column, and revisit it (e.g. with a migration tool) before this matters in a shared environment.
+Flyway manages the schema: migrations live in `src/main/resources/db/migration` and run
+automatically on startup. Hibernate only checks the result (`ddl-auto: validate`) — a mapping
+that drifts from the migrated schema fails fast at startup instead of silently altering the
+database.
+
+If you had a local database from before this change (schema created by `ddl-auto: update`),
+Flyway won't recognise it — drop it and let `compose.yaml` recreate an empty one:
+
+```
+docker compose down -v
+DB_PASSWORD=<same-password> docker compose up -d
+```
 
 ## Tests
 
