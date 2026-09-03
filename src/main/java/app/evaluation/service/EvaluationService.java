@@ -1,5 +1,10 @@
 package app.evaluation.service;
 
+import app.assignment.Assignment;
+import app.assignment.AssignmentRepository;
+import app.assignment.AssignmentVersion;
+import app.assignment.Criterion;
+import app.assignment.Rubric;
 import app.evaluation.domain.EvaluationNotFoundException;
 import app.evaluation.domain.InvalidModelOutputException;
 import app.evaluation.llm.LlmClient;
@@ -17,9 +22,6 @@ import app.evaluation.web.EvaluationResponse;
 import app.evaluation.web.EvaluationSummaryResponse;
 import app.evaluation.web.FindingResponse;
 import app.evaluation.web.SuggestedGradeResponse;
-import app.rubric.Criterion;
-import app.rubric.Rubric;
-import app.rubric.RubricRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
@@ -52,7 +54,7 @@ public class EvaluationService {
      * which quote failed, without turning the response into a Submission excerpt. */
     private static final int QUOTE_EXCERPT_LENGTH = 80;
 
-    private final RubricRepository rubricRepository;
+    private final AssignmentRepository assignmentRepository;
     private final EvaluationRepository evaluationRepository;
     private final LlmClient llmClient;
     private final PromptBuilder promptBuilder;
@@ -61,7 +63,7 @@ public class EvaluationService {
     private final LlmProperties llmProperties;
     private final Clock clock;
 
-    public EvaluationService(RubricRepository rubricRepository,
+    public EvaluationService(AssignmentRepository assignmentRepository,
                               EvaluationRepository evaluationRepository,
                               LlmClient llmClient,
                               PromptBuilder promptBuilder,
@@ -69,7 +71,7 @@ public class EvaluationService {
                               Validator validator,
                               LlmProperties llmProperties,
                               Clock clock) {
-        this.rubricRepository = rubricRepository;
+        this.assignmentRepository = assignmentRepository;
         this.evaluationRepository = evaluationRepository;
         this.llmClient = llmClient;
         this.promptBuilder = promptBuilder;
@@ -80,8 +82,9 @@ public class EvaluationService {
     }
 
     @Transactional
-    public EvaluationResponse evaluate(EvaluationRequest request) {
-        Rubric rubric = loadActiveRubric();
+    public EvaluationResponse evaluate(EvaluationRequest request, UUID educatorId) {
+        AssignmentVersion assignmentVersion = loadLatestAssignmentVersion(educatorId);
+        Rubric rubric = assignmentVersion.getRubric();
         LlmRequest llmRequest = promptBuilder.build(rubric, request.submissionText());
         ValidatedPayload validated = requestValidatedPayload(rubric, llmRequest, request.submissionText());
         LlmEvaluationPayload payload = validated.payload();
@@ -103,7 +106,7 @@ public class EvaluationService {
 
         Evaluation evaluation = new Evaluation(
                 UUID.randomUUID(),
-                rubric.getVersion(),
+                assignmentVersion.getVersionNumber(),
                 llmProperties.provider(),
                 llmProperties.model(),
                 payload.suggestedGrade().label(),
@@ -169,10 +172,19 @@ public class EvaluationService {
                 : evidence.substring(0, QUOTE_EXCERPT_LENGTH) + "…";
     }
 
-    private Rubric loadActiveRubric() {
-        return rubricRepository.findFirstByOrderByVersionDesc()
+    /**
+     * Temporary internal seam: {@link EvaluationRequest} does not yet name an Assignment — that
+     * is ticket 09's job, alongside letting an Educator evaluate against their Draft or a chosen
+     * published version. Until then, this evaluates against the calling Educator's most recently
+     * created Assignment, using its latest published version.
+     */
+    private AssignmentVersion loadLatestAssignmentVersion(UUID educatorId) {
+        Assignment assignment = assignmentRepository.findFirstByEducatorIdOrderByCreatedAtDesc(educatorId)
                 .orElseThrow(() -> new IllegalStateException(
-                        "No Rubric is seeded; the service cannot evaluate a Submission without one"));
+                        "Educator has no Assignment; create one before evaluating a Submission"));
+        return assignment.latestVersion()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Assignment has no published version; publish one before evaluating a Submission"));
     }
 
     private LlmEvaluationPayload parseAndValidate(String raw) {

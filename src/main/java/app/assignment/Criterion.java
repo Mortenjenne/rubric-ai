@@ -1,4 +1,4 @@
-package app.rubric;
+package app.assignment;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -19,8 +19,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * One row of a Rubric: a single aspect of a Submission judged on its own,
- * traceable to the Source material it came from, with one descriptor per Level.
+ * One row of a Rubric: a single aspect of a Submission judged on its own, traceable to the
+ * Source references it came from, with one descriptor per Level. A Criterion belongs to exactly
+ * one Draft or exactly one AssignmentVersion, never both — {@link #assignToDraft} and
+ * {@link #assignToVersion} are mutually exclusive, enforced by the aggregate that calls them.
  */
 @Entity
 @Table(name = "criteria")
@@ -30,7 +32,8 @@ public class Criterion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** The stable business key from the bundled Rubric resource, e.g. "formkrav". */
+    /** The stable business key, e.g. "c1" or a Template's readable "formkrav". Never derived
+     * from the Criterion's name, and never changed by a rename or a reorder. */
     @Column(name = "criterion_key", nullable = false)
     private String key;
 
@@ -44,16 +47,20 @@ public class Criterion {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rubric_version", nullable = false)
-    private Rubric rubric;
+    @JoinColumn(name = "draft_id")
+    private Draft draft;
 
-    // A Criterion is always used together with its source material and Level descriptors, so
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_version_id")
+    private AssignmentVersion assignmentVersion;
+
+    // A Criterion is always used together with its source references and Level descriptors, so
     // both collections below are loaded eagerly rather than left as lazy proxies.
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "criterion_sources", joinColumns = @JoinColumn(name = "criterion_id"))
+    @CollectionTable(name = "criterion_source_references", joinColumns = @JoinColumn(name = "criterion_id"))
     @OrderColumn(name = "position")
     @Column(name = "source", nullable = false)
-    private List<String> sourceMaterial;
+    private List<String> sourceReferences;
 
     /** Level name (Mangelfuldt, Acceptabelt, Tilfredsstillende, Udmærket) to its descriptor. */
     @ElementCollection(fetch = FetchType.EAGER)
@@ -67,17 +74,21 @@ public class Criterion {
     }
 
     public Criterion(String key, String name, int weight, String description,
-                      List<String> sourceMaterial, Map<String, String> levels) {
+                      List<String> sourceReferences, Map<String, String> levels) {
         this.key = key;
         this.name = name;
         this.weight = weight;
         this.description = description;
-        this.sourceMaterial = sourceMaterial;
+        this.sourceReferences = sourceReferences;
         this.levels = levels;
     }
 
-    void assignTo(Rubric rubric) {
-        this.rubric = rubric;
+    void assignToDraft(Draft draft) {
+        this.draft = draft;
+    }
+
+    void assignToVersion(AssignmentVersion assignmentVersion) {
+        this.assignmentVersion = assignmentVersion;
     }
 
     public Long getId() {
@@ -100,12 +111,8 @@ public class Criterion {
         return description;
     }
 
-    public Rubric getRubric() {
-        return rubric;
-    }
-
-    public List<String> getSourceMaterial() {
-        return sourceMaterial;
+    public List<String> getSourceReferences() {
+        return sourceReferences;
     }
 
     public Map<String, String> getLevels() {

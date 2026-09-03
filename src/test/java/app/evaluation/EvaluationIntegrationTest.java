@@ -1,5 +1,8 @@
 package app.evaluation;
 
+import app.assignment.Assignment;
+import app.assignment.AssignmentRepository;
+import app.educator.Educator;
 import app.evaluation.domain.LlmConfigurationException;
 import app.evaluation.domain.RateLimitedException;
 import app.evaluation.domain.UpstreamUnavailableException;
@@ -19,6 +22,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +49,9 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
 
     private static final String MARKER_SENTENCE =
             "Denne saetning bruges udelukkende til at bevise at teksten aldrig gemmes, kode QZX-77219.";
@@ -126,6 +136,84 @@ class EvaluationIntegrationTest extends AbstractEvaluationIntegrationTest {
     @BeforeEach
     void resetFakeLlmClient() {
         fakeLlmClient.reset();
+    }
+
+    /**
+     * The temporary seam in {@code EvaluationService} (ticket 03) evaluates against the calling
+     * Educator's most recently created Assignment, using its latest published version — there is
+     * no {@code assignmentId} on the request yet (ticket 09). This creates that Assignment once,
+     * mirroring the old bundled praktikrapport Rubric so the fake model payloads below — which
+     * hardcode its Criterion keys — keep matching what is actually being evaluated against.
+     */
+    @BeforeEach
+    void ensurePraktikrapportAssignmentExists() {
+        Educator educator = seedEducator(TEST_EDUCATOR_EMAIL, "Test Educator", "irrelevant-test-password");
+        if (assignmentRepository.findFirstByEducatorIdOrderByCreatedAtDesc(educator.getId()).isEmpty()) {
+            Assignment assignment = new Assignment(
+                    UUID.randomUUID(), educator, "Praktikrapport, 5. semester, datamatikeruddannelsen",
+                    Instant.now(clock));
+            assignment.addDraftCriterion("formkrav", "Formkrav & begrænsninger", 10,
+                    "Om rapporten overholder de formelle krav.",
+                    List.of("krav-til-rapport.md"),
+                    levels(
+                            "Alle seks krævede indholdselementer er til stede og omfanget er overholdt.",
+                            "Alle væsentlige indholdselementer er til stede og omfanget er overholdt.",
+                            "Rapporten overholder omfanget, men mangler et enkelt krævet element.",
+                            "Omfanget er overskredet, eller flere krævede indholdselementer mangler helt."));
+            assignment.addDraftCriterion("viden", "Viden om praktikvirksomheden", 15,
+                    "Den studerende har viden om den daglige drift i hele praktikvirksomheden.",
+                    List.of("laeringsmaal.md"),
+                    levels(
+                            "Beskriver virksomheden som helhed og sammenhængen til egne opgaver.",
+                            "Beskriver virksomheden og eget team dækkende.",
+                            "Nævner virksomheden kort og overvejende gennem egne opgaver.",
+                            "Virksomheden er stort set ubeskrevet."));
+            assignment.addDraftCriterion("faerdigheder", "Færdigheder i praksis", 25,
+                    "Anvende alsidige tekniske og analytiske arbejdsmetoder.",
+                    List.of("laeringsmaal.md"),
+                    levels(
+                            "Alle fire færdighedsmål er belagt med konkrete opgaver fra praktikken.",
+                            "De fleste færdighedsmål er belagt med konkrete eksempler.",
+                            "Færdighederne nævnes overvejende som opremsning af opgaver og værktøjer.",
+                            "Flere færdighedsmål er ikke berørt."));
+            assignment.addDraftCriterion("kompetencer", "Kompetencer og professionel tilgang", 20,
+                    "Håndtere udviklingsorienterede praktiske og faglige situationer.",
+                    List.of("laeringsmaal.md"),
+                    levels(
+                            "Viser selvstændig håndtering af uvante faglige situationer.",
+                            "To af de tre kompetencemål er tydeligt belagt.",
+                            "Kompetencerne berøres generelt eller kun gennem et enkelt eksempel.",
+                            "Rapporten viser ikke selvstændig håndtering af faglige situationer."));
+            assignment.addDraftCriterion("refleksion", "Refleksion over teori, udviklingsmål og udbytte", 20,
+                    "Om rapporten reflekterer frem for at referere.",
+                    List.of("krav-til-rapport.md"),
+                    levels(
+                            "Navngivne teorier og modeller fra uddannelsen bruges aktivt til at analysere praksis.",
+                            "Teorier og modeller nævnes og kobles til praksis.",
+                            "Refleksionen er hovedsagelig gengivelse af forløbet.",
+                            "Rapporten er en beretning om hvad der skete, uden kobling til teori."));
+            assignment.addDraftCriterion("dare-share-care", "Dare, Share, Care", 10,
+                    "EK's tre kerneværdier, som indgår i bedømmelsen.",
+                    List.of("dare-share-care.md"),
+                    levels(
+                            "Alle tre værdier er belagt med konkrete episoder fra praktikken.",
+                            "To af de tre værdier er tydeligt belagt med episoder.",
+                            "Værdierne er til stede som personlige udsagn eller opremsning uden episoder.",
+                            "Værdierne er hverken navngivet eller genkendelige i rapportens indhold."));
+
+            assignment.publishVersion(Instant.now(clock));
+            assignmentRepository.save(assignment);
+        }
+    }
+
+    private Map<String, String> levels(String udmaerket, String tilfredsstillende, String acceptabelt,
+                                        String mangelfuldt) {
+        Map<String, String> levels = new LinkedHashMap<>();
+        levels.put("Udmærket", udmaerket);
+        levels.put("Tilfredsstillende", tilfredsstillende);
+        levels.put("Acceptabelt", acceptabelt);
+        levels.put("Mangelfuldt", mangelfuldt);
+        return levels;
     }
 
     private String requestBody() throws Exception {

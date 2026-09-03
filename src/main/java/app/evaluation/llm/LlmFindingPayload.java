@@ -1,6 +1,6 @@
 package app.evaluation.llm;
 
-import app.rubric.Level;
+import app.assignment.Level;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

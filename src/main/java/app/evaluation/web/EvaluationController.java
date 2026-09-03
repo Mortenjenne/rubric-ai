@@ -1,7 +1,9 @@
 package app.evaluation.web;
 
 import app.evaluation.service.EvaluationService;
+import app.security.EducatorPrincipal;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,8 +25,9 @@ public class EvaluationController {
     }
 
     @PostMapping
-    public EvaluationResponse evaluate(@Valid @RequestBody EvaluationRequest request) {
-        return evaluationService.evaluate(request);
+    public EvaluationResponse evaluate(@Valid @RequestBody EvaluationRequest request,
+                                        @AuthenticationPrincipal EducatorPrincipal principal) {
+        return evaluationService.evaluate(request, principal.educatorId());
     }
 
     @GetMapping

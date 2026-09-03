@@ -1,9 +1,9 @@
 package app.evaluation.llm;
 
+import app.assignment.Criterion;
+import app.assignment.Level;
+import app.assignment.Rubric;
 import app.evaluation.domain.SuggestedGradeValue;
-import app.rubric.Criterion;
-import app.rubric.Level;
-import app.rubric.Rubric;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -65,13 +65,12 @@ class PromptBuilderTest {
     }
 
     private Rubric rubric() {
-        Rubric rubric = new Rubric(1, "Praktikrapport", "da", "Niveauerne er kvalitetsbånd.");
         Map<String, String> levels = new LinkedHashMap<>();
         levels.put(Level.UDMAERKET.label(), "Alle tre værdier er belagt med konkrete episoder.");
         levels.put(Level.MANGELFULDT.label(), "Værdierne er ikke genkendelige i rapportens indhold.");
-        rubric.addCriterion(new Criterion(
+        Criterion criterion = new Criterion(
                 "dare-share-care", "Dare, Share, Care", 10,
-                "EK's tre kerneværdier.", List.of("dare-share-care.md"), levels));
-        return rubric;
+                "EK's tre kerneværdier.", List.of("dare-share-care.md"), levels);
+        return new Rubric(List.of(criterion));
     }
 }

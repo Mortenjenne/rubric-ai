@@ -35,7 +35,7 @@ import java.util.UUID;
 @ActiveProfiles("test")
 public abstract class AbstractEvaluationIntegrationTest {
 
-    private static final String TEST_EDUCATOR_EMAIL = "test-educator@example.com";
+    protected static final String TEST_EDUCATOR_EMAIL = "test-educator@example.com";
 
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 

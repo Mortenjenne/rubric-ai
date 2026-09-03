@@ -1,11 +1,11 @@
-package app.rubric;
+package app.assignment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * One column of a Rubric: a named band of performance. A Level names a quality,
- * never a grade — the label is what both the bundled Rubric resource and the
+ * never a grade — the label is what both a bundled Template resource and the
  * model's JSON output use on the wire.
  */
 public enum Level {

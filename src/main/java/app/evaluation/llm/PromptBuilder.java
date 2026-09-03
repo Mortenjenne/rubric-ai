@@ -1,9 +1,9 @@
 package app.evaluation.llm;
 
+import app.assignment.Criterion;
+import app.assignment.Level;
+import app.assignment.Rubric;
 import app.evaluation.domain.SuggestedGradeValue;
-import app.rubric.Criterion;
-import app.rubric.Level;
-import app.rubric.Rubric;
 import org.springframework.stereotype.Component;
 
 /**
@@ -85,18 +85,13 @@ public class PromptBuilder {
     private String userPrompt(Rubric rubric, String submissionText) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("=== BEDØMMELSESSKEMA ===\n\n");
-        prompt.append("Opgave: ").append(rubric.getAssignment()).append('\n');
-        if (rubric.getNote() != null && !rubric.getNote().isBlank()) {
-            prompt.append("Note: ").append(rubric.getNote()).append('\n');
-        }
-        prompt.append('\n');
 
         for (Criterion criterion : rubric.getCriteria()) {
             prompt.append("Kriterie-id: ").append(criterion.getKey()).append('\n');
             prompt.append("Navn: ").append(criterion.getName()).append('\n');
             prompt.append("Vægt: ").append(criterion.getWeight()).append('\n');
-            if (criterion.getSourceMaterial() != null && !criterion.getSourceMaterial().isEmpty()) {
-                prompt.append("Kilde: ").append(String.join(", ", criterion.getSourceMaterial())).append('\n');
+            if (criterion.getSourceReferences() != null && !criterion.getSourceReferences().isEmpty()) {
+                prompt.append("Kilde: ").append(String.join(", ", criterion.getSourceReferences())).append('\n');
             }
             prompt.append("Beskrivelse: ").append(criterion.getDescription()).append('\n');
             for (Level level : Level.values()) {

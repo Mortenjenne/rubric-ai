@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * The fixed set of marks on the 7-trins-skala a Suggested grade may take. Kept as a closed
- * enum, mirroring {@link app.rubric.Level}, rather than a string pattern, so an out-of-scale
+ * enum, mirroring {@link app.assignment.Level}, rather than a string pattern, so an out-of-scale
  * value fails at deserialisation instead of needing a separate check.
  */
 public enum SuggestedGradeValue {

@@ -1,11 +1,11 @@
 package app.evaluation.llm;
 
+import app.assignment.Level;
 import app.evaluation.domain.InvalidModelOutputException;
 import app.evaluation.domain.LlmConfigurationException;
 import app.evaluation.domain.RateLimitedException;
 import app.evaluation.domain.SuggestedGradeValue;
 import app.evaluation.domain.UpstreamUnavailableException;
-import app.rubric.Level;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;

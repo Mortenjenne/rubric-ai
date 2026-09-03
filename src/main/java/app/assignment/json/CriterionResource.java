@@ -1,4 +1,4 @@
-package app.rubric.json;
+package app.assignment.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -9,7 +9,7 @@ public record CriterionResource(
         String id,
         String name,
         int weight,
-        @JsonProperty("sources") List<String> sourceMaterial,
+        @JsonProperty("sources") List<String> sourceReferences,
         String description,
         Map<String, String> levels) {
 }
