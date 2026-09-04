@@ -1,73 +1,83 @@
-# Rubric AI backend
+# Rubric AI — backend
 
-Backend service that judges a Submission against a fixed Rubric using a large language model,
-and returns a structured, advisory Evaluation. See [`CONTEXT.md`](CONTEXT.md) for the domain
-vocabulary, [`docs/adr/`](docs/adr/) for the decisions behind the design, and
-[`docs/api.md`](docs/api.md) for the API contract (request/response shapes, error codes, and
-local setup) — written for building the frontend against this service without reading its source.
+A backend service that judges a student **Submission** against a fixed **Rubric** using a large
+language model, and returns a structured, **advisory** Evaluation in Danish — never an
+authoritative mark.
 
-## Requirements
+> This backend was written with **agentic development**, following Matt Pocock's AI skills from
+> [aihero.dev](https://www.aihero.dev). See [`HOW-THIS-WAS-BUILT.md`](HOW-THIS-WAS-BUILT.md) for
+> the process, and the write-up at **[corral.dk](https://www.corral.dk/)** for the reflection on
+> what the result was actually worth.
 
-- Java 25
-- Docker (for local Postgres and for the integration tests, which run against a real Postgres
-  via Testcontainers — nothing in-memory stands in for it)
+## The task
 
-## Configuration
+*AI-vurdering af en opgave ud fra en rubric* — a one-day assignment on the Datamatiker programme:
+derive an assessment rubric from real course material, and use an LLM to produce a *vejledende*
+assessment of a student hand-in against it. Explicitly not an automatic grader.
 
-The database connection and its credentials are read from the environment; no credential is
-committed. Set at least `DB_PASSWORD` before starting the database or the application. Calling
-the real language model additionally requires `OPENAI_API_KEY` — without it, the app still
-starts (only the fake adapter is used in tests), but posting a Submission against the real
-adapter fails fast:
+The hand-in we judge is the 5th-semester **praktikrapport**, the internship report that grounds the
+final oral exam. The rubric was derived by hand from three course documents (`docs/sources/`) into
+six criteria, weights summing to 100, each with the same four levels — **Mangelfuldt → Acceptabelt
+→ Tilfredsstillende → Udmærket**. It ships as data, not logic:
+`src/main/resources/rubric/praktikrapport-v1.json`, seeded into Postgres at startup.
 
-| Variable         | Used by       | Default        |
-| ---------------- | ------------- | -------------- |
-| `DB_HOST`        | app           | `localhost`    |
-| `DB_PORT`        | app, compose  | `5432`         |
-| `DB_NAME`        | app, compose  | `rubricai`     |
-| `DB_USER`        | app, compose  | `rubricai`     |
-| `DB_PASSWORD`    | app, compose  | *(required)*   |
-| `OPENAI_API_KEY` | app           | *(required)*   |
-| `LLM_PROVIDER`   | app           | `openai`       |
-| `LLM_MODEL`      | app           | `gpt-4o-mini`  |
+The Educator is the only reader of an Evaluation. Students never use this system.
 
-`LLM_MODEL` must name a model that both supports Structured Outputs and honours a custom
-`temperature` on Chat Completions — OpenAI's newer reasoning-style tiers (e.g. `gpt-5.6-luna`)
-accept requests but reject any temperature override, so confirm both before overriding the
-default.
+## Architecture
 
-## Running locally
-
-Start Postgres:
+Spring Boot 3 · Java 25 · Postgres · OpenAI Structured Outputs.
 
 ```
-DB_PASSWORD=<pick-a-local-password> docker compose up -d
+POST /api/evaluations        create an Evaluation (synchronous, 20–60s)
+GET  /api/evaluations        list Evaluation summaries, newest first
+GET  /api/evaluations/{id}   fetch one full Evaluation
 ```
 
-Run the service against it:
+The request body carries one field, `submissionText`. The rubric and the assignment are server-side
+config, so a class can't be evaluated against six different rubrics by accident.
+
+Inside `EvaluationService.evaluate()`:
 
 ```
-DB_PASSWORD=<same-password> ./mvnw spring-boot:run
+load active Rubric → build prompts → LlmClient.call() → parse → validate
+      → check rubric coverage → verify every quote → persist → respond
 ```
 
-On a clean database the service seeds Rubric version 1 for the praktikrapport Assignment from
-the bundled JSON resource (`src/main/resources/rubric/praktikrapport-v1.json`) on startup. A
-seeded Rubric version is never updated by the seeder on later startups — only a missing version
-is inserted — so that an Evaluation recorded against it keeps referring to the Rubric that
-actually judged it.
+Four ideas carry the design:
 
-## Schema
+- **One port, one seam.** `LlmClient` is an interface with a single method and a single
+  implementation (`OpenAiClient`); all retry and failure classification lives behind it. The service
+  reads as orchestration, and tests substitute exactly one thing.
+- **The provider's schema is not the last line of defence.** The JSON schema is generated from the
+  Java enums so it can't drift from what we parse against — and the payload is *still* re-checked
+  afterwards: Jackson parse, Bean Validation, one finding per criterion, and every quote verified to
+  appear verbatim in the submission. A rejected payload is re-asked once, then the request fails and
+  nothing is stored.
+- **The submission text is never written to storage.** A praktikrapport names employers, colleagues
+  and mentors. Short quotes inside findings do persist — that's what makes a finding checkable — and
+  the trade-off is written down rather than glossed over.
+- **Provenance on every row.** Each Evaluation records its rubric version, provider and model, so a
+  disagreement between two runs is attributable rather than mysterious.
 
-Hibernate manages the schema (`ddl-auto: update`) at this stage: it creates tables and adds
-columns as entities change, but it never drops or narrows a column. This is a deliberate,
-temporary choice for early development — don't rely on it to clean up a removed or renamed
-column, and revisit it (e.g. with a migration tool) before this matters in a shared environment.
+Failures are classified rather than uniformly retried: a 429 or a 5xx backs off and returns `503`,
+a refused connection fails fast, and a 401 returns `500` — deliberately outside the retryable
+family, because a UI should not offer "try again" for a missing API key.
 
-## Tests
+## Where things are
 
-```
-./mvnw test
-```
+| | |
+| --- | --- |
+| [`CONTEXT.md`](CONTEXT.md) | The domain vocabulary — twelve terms, each with an *avoid* list |
+| [`docs/adr/`](docs/adr/) | Five architecture decision records, each naming the option it rejected |
+| [`docs/api.md`](docs/api.md) | The API contract — request/response shapes and error codes |
+| [`docs/running.md`](docs/running.md) | Requirements, configuration and how to run it locally |
+| [`HOW-THIS-WAS-BUILT.md`](HOW-THIS-WAS-BUILT.md) | The agentic process behind the repo |
+| [`.scratch/`](.scratch/) | Specs and tickets, committed alongside the code |
 
-Integration tests boot the real Spring context against a Postgres container started by
-Testcontainers (Docker must be running) and assert against the database, not against internals.
+## Reflection
+
+The reflection on the assignment — what the rubric caught, where the model was weak and misleading,
+and the real limits of an LLM for this job — lives as a post at
+**[www.corral.dk](https://www.corral.dk/)** rather than in this repo.
+
+A frontend for the Educator lives in the sibling `rubric-ai-ui` repo.
