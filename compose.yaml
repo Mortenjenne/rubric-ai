@@ -1,6 +1,9 @@
 services:
   postgres:
     image: postgres:16-alpine
+    # Docker Desktop restarting takes the container down with it; without a policy it stays down
+    # and the next `spring-boot:run` fails with a refused connection instead of anything useful.
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-rubricai}
       POSTGRES_USER: ${DB_USER:-rubricai}
